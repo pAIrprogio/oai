@@ -1,0 +1,146 @@
+{
+  "allTools": [
+    {
+      "name": "executeCommand",
+      "description": "Executes a command in a bash terminal",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "command": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "command"
+        ]
+      }
+    },
+    {
+      "name": "ls",
+      "description": "List a directory's files",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "relativePath": {
+            "type": "string",
+            "description": "relative path to the directory",
+            "default": "\".\" (workspace root)"
+          }
+        },
+        "required": [
+          "relativePath"
+        ]
+      }
+    },
+    {
+      "name": "readFile",
+      "description": "read a file",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "relativeFilePath": {
+            "type": "string"
+          },
+          "prefixWithLineNumbers": {
+            "type": "boolean",
+            "description": "Prefix each line with its line number. Use it for git patches",
+            "default": false
+          }
+        },
+        "required": [
+          "relativeFilePath"
+        ]
+      }
+    },
+    {
+      "name": "writeFile",
+      "description": "Write text to a file, replacing the current file's content",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "relativeFilePath": {
+            "type": "string"
+          },
+          "content": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "relativeFilePath",
+          "content"
+        ]
+      }
+    }
+  ],
+  "executeCommand": {
+    "name": "executeCommand",
+    "description": "Executes a command in a bash terminal",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "command": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "command"
+      ]
+    }
+  },
+  "ls": {
+    "name": "ls",
+    "description": "List a directory's files",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "relativePath": {
+          "type": "string",
+          "description": "relative path to the directory",
+          "default": "\".\" (workspace root)"
+        }
+      },
+      "required": [
+        "relativePath"
+      ]
+    }
+  },
+  "readFile": {
+    "name": "readFile",
+    "description": "read a file",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "relativeFilePath": {
+          "type": "string"
+        },
+        "prefixWithLineNumbers": {
+          "type": "boolean",
+          "description": "Prefix each line with its line number. Use it for git patches",
+          "default": false
+        }
+      },
+      "required": [
+        "relativeFilePath"
+      ]
+    }
+  },
+  "writeFile": {
+    "name": "writeFile",
+    "description": "Write text to a file, replacing the current file's content",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "relativeFilePath": {
+          "type": "string"
+        },
+        "content": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "relativeFilePath",
+        "content"
+      ]
+    }
+  }
+}

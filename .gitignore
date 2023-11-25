@@ -3,4 +3,6 @@ node_modules/
 *.tsbuildinfo
 /dist/
 /.pnpm-store/
-
+dist
+.env
+tmp.patch
