@@ -10,7 +10,13 @@ const defaultSystemPrompt = `You're a senior developer at GAFA. Your objective i
 When modifying files, read the file content with line numbers and use a git patch to apply the changes. Don't wait for confirmation before executing commands`;
 
 const getConfig = () => {
-  const configFile = readFileSync("./config.yml", "utf-8");
+  try {
+    var configFile = readFileSync("./ai.config.yml", "utf-8");
+  } catch (error) {
+    return {
+      systemPrompt: defaultSystemPrompt,
+    };
+  }
   const config = YAML.parse(configFile);
 
   const noTools = !config.tools;
