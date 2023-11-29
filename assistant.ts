@@ -1,13 +1,32 @@
 import OpenAI from "openai";
+import { readFileSync } from "fs";
 import { zip, map, toArray } from "iter-tools";
 import toolsSchema from "./tools/definitions.json" assert { type: "json" };
-import * as tools from "./tools/index.js";
+import * as toolsFns from "./tools/index.js";
 import { Run } from "openai/resources/beta/threads/runs/runs.mjs";
-import { ProcessOutput } from "zx";
+import { ProcessOutput, YAML } from "zx";
 
-const systemPrompt = `You're a senior developer at GAFA. Your objective is to assist the user into planning and executing on development tasks.
+const defaultSystemPrompt = `You're a senior developer at GAFA. Your objective is to assist the user into planning and executing on development tasks.
 When modifying files, read the file content with line numbers and use a git patch to apply the changes. Don't wait for confirmation before executing commands`;
 
+const getConfig = () => {
+  const configFile = readFileSync("./config.yml", "utf-8");
+  const config = YAML.parse(configFile);
+
+  const noTools = !config.tools;
+  const toolsSet = new Set(config.tools);
+  return {
+    systemPrompt: config.systemPrompt ?? defaultSystemPrompt,
+    tools: toolsSchema.allTools
+      .filter((tool) => noTools || toolsSet.has(tool))
+      .map((tool) => ({
+        type: "function" as const,
+        function: tool,
+      })),
+  };
+};
+
+const { systemPrompt, tools } = getConfig();
 // #region openAIClient
 
 const openai = new OpenAI({
@@ -18,10 +37,7 @@ const assistant = await openai.beta.assistants.create({
   name: "pAIprog",
   model: "gpt-4-1106-preview",
   instructions: systemPrompt,
-  tools: toolsSchema.allTools.map((tool) => ({
-    type: "function",
-    function: tool,
-  })),
+  tools,
 });
 
 const thread = await openai.beta.threads.create();
@@ -140,9 +156,12 @@ const executeFunctions = async (run: Run) => {
       return { success: false, error: "Unsupported tool call type" };
     }
 
-    const functionName = toolCall.function.name as keyof typeof tools;
+    const functionName = toolCall.function.name as Exclude<
+      keyof typeof toolsSchema,
+      "allTools"
+    >;
     const functionArguments = JSON.parse(toolCall.function.arguments);
-    const fn = tools[functionName];
+    const fn = toolsFns[functionName];
 
     if (!fn)
       return {
