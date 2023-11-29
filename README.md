@@ -16,8 +16,14 @@ https://github.com/pAIrprogio/assistant-cli-playground/assets/1863461/1256ad23-c
 ```bash
 git clone git@github.com:pAIrprogio/gpt-assistant-cli-playground.git
 pnpm install
-pnpm start
 ```
+
+## Configure
+
+- Add your OpenAI API key to a .env file using `OPENAI_API_KEY=your-key`
+- Edit the ai.config.yml file as needed
+  - This file is loaded from where you run the `ai` command so it can be different for each project.
+  - Autocomplete is available for this file in VSCode using [./schemas/ai.config.schema.json](./schemas/ai.config.schema.json)
 
 ## CLI Usage
 
