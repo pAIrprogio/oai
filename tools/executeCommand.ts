@@ -8,7 +8,8 @@ export interface ExecuteCommand {
 }
 
 export async function executeCommand(args: ExecuteCommand) {
-  const argsArray = args.command.split(" ");
+  // Split space but keep quoted strings together
+  const argsArray = args.command.match(/"[^"]+"|\S+/g) || [];
   const res = await $`${argsArray}`;
 
   return {
