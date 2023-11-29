@@ -20,7 +20,14 @@ while (true) {
   }).start();
   let previousActions = null;
 
+  // Grab the interrupt function
+  let interrupt: (() => Promise<void>) | null = null;
+  // TODO: Find a way to use it
+
   for await (let status of res) {
+    // Check here to clear TS errors
+    if (typeof status === "function") throw new Error("Unexpected function");
+
     if (
       previousActions &&
       status.type !== "executing_actions" &&
@@ -35,6 +42,10 @@ while (true) {
     }
 
     switch (status.type) {
+      case "interruptFn":
+        interrupt = status.interrupt;
+        process.on("SIGINT", interrupt);
+        break;
       case "executing_actions_failure":
         currentSpinner.fail();
         currentSpinner = ora({
@@ -102,4 +113,6 @@ while (true) {
         never(status);
     }
   }
+
+  if (interrupt) process.off("SIGINT", interrupt);
 }

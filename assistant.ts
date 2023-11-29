@@ -3,7 +3,6 @@ import { readFileSync } from "fs";
 import { zip, map, toArray } from "iter-tools";
 import toolsSchema from "./tools/definitions.json" assert { type: "json" };
 import * as toolsFns from "./tools/index.js";
-import { Run } from "openai/resources/beta/threads/runs/runs.mjs";
 import { ProcessOutput, YAML } from "zx";
 
 const defaultSystemPrompt = `You're a senior developer at GAFA. Your objective is to assist the user into planning and executing on development tasks.
@@ -50,45 +49,26 @@ const thread = await openai.beta.threads.create();
 
 // #endregion
 
-type ProcessingMessage =
-  | {
-      type: "queued";
-    }
-  | {
-      type: "in_progress";
-    }
-  | {
-      type: "cancelling";
-    }
-  | {
-      type: "cancelled";
-    }
-  | {
-      type: "failed";
-      error: string;
-    }
-  | {
-      type: "expired";
-    }
-  | {
-      type: "executing_actions";
-      tools: string[];
-    }
-  | {
-      type: "executing_actions_failure";
-    }
-  | {
-      type: "completed";
-      message: string;
-    };
+export async function* message(text: string) {
+  let run: OpenAI.Beta.Threads.Runs.Run;
+  let isInterrupted = false;
 
-export async function* message(text: string): AsyncIterable<ProcessingMessage> {
+  const interrupt = async () => {
+    isInterrupted = true;
+    if (!run) return;
+    await openai.beta.threads.runs.cancel(thread.id, run.id).catch(() => {
+      // Ignore error when trying to cancel a cancelled or completed run
+    });
+  };
+
+  yield { type: "interruptFn" as const, interrupt };
+
   await openai.beta.threads.messages.create(thread.id, {
     role: "user",
     content: text,
   });
 
-  let run = await openai.beta.threads.runs.create(thread.id, {
+  run = await openai.beta.threads.runs.create(thread.id, {
     assistant_id: assistant.id,
   });
 
@@ -105,20 +85,20 @@ export async function* message(text: string): AsyncIterable<ProcessingMessage> {
     }
 
     if (run.status === "cancelled") {
-      yield { type: "cancelled" };
+      yield { type: "cancelled" as const };
       return;
     }
 
     if (run.status === "failed") {
       yield {
-        type: "failed",
+        type: "failed" as const,
         error: run.last_error?.message ?? "Unknown Error",
       };
       return;
     }
 
     if (run.status === "expired") {
-      yield { type: "expired" };
+      yield { type: "expired" as const };
       return;
     }
 
@@ -127,10 +107,16 @@ export async function* message(text: string): AsyncIterable<ProcessingMessage> {
         run.required_action?.submit_tool_outputs.tool_calls.map(
           (tool) => tool.function.name,
         ) ?? [];
-      yield { type: "executing_actions", tools: toolsNames };
-      const [newRun, isSuccess] = await executeFunctions(run);
-      if (!isSuccess) yield { type: "executing_actions_failure" };
-      run = newRun;
+      yield { type: "executing_actions" as const, tools: toolsNames };
+      try {
+        const [newRun, isSuccess] = await executeFunctions(run);
+        if (!isSuccess) yield { type: "executing_actions_failure" as const };
+        run = newRun;
+      } catch (error) {
+        // Recover from error when trying to send tool outputs on a cancelled run
+        if (isInterrupted) continue;
+        throw error;
+      }
     }
 
     if (run.status === "completed") {
@@ -139,14 +125,14 @@ export async function* message(text: string): AsyncIterable<ProcessingMessage> {
 
       if (lastMessage.type === "text") {
         // TODO: add annotations
-        yield { type: "completed", message: lastMessage.text.value };
+        yield { type: "completed" as const, message: lastMessage.text.value };
         return;
       }
     }
   }
 }
 
-const executeFunctions = async (run: Run) => {
+const executeFunctions = async (run: OpenAI.Beta.Threads.Runs.Run) => {
   if (!run.required_action) {
     throw new Error("Empty tool function to execute");
   }
