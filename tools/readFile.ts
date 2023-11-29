@@ -16,21 +16,14 @@ export async function readFile({
   relativeFilePath,
   prefixWithLineNumbers,
 }: ReadFile) {
-  try {
-    const fileContent = await fsReadFile(relativeFilePath, "utf-8");
+  const fileContent = await fsReadFile(relativeFilePath, "utf-8");
 
-    if (prefixWithLineNumbers) {
-      return fileContent
-        .split("\n")
-        .map((line, index) => `${index + 1}:${line}`)
-        .join("\n");
-    }
-
-    return fileContent;
-  } catch (error) {
-    return {
-      success: false,
-      error: error,
-    };
+  if (prefixWithLineNumbers) {
+    return fileContent
+      .split("\n")
+      .map((line, index) => `${index + 1}:${line}`)
+      .join("\n");
   }
+
+  return fileContent;
 }

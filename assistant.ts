@@ -3,6 +3,7 @@ import { zip, map, toArray } from "iter-tools";
 import toolsSchema from "./tools/definitions.json" assert { type: "json" };
 import * as tools from "./tools/index.js";
 import { Run } from "openai/resources/beta/threads/runs/runs.mjs";
+import { ProcessOutput } from "zx";
 
 const systemPrompt = `You're a senior developer at GAFA. Your objective is to assist the user into planning and executing on development tasks.
 When modifying files, read the file content with line numbers and use a git patch to apply the changes. Don't wait for confirmation before executing commands`;
@@ -149,7 +150,7 @@ const executeFunctions = async (run: Run) => {
         error: `Unsupported tool function ${functionName}`,
       };
 
-    const output = fn(functionArguments);
+    const output = fn(functionArguments).catch(errorFormater);
 
     return output;
   });
@@ -181,4 +182,13 @@ const executeFunctions = async (run: Run) => {
   );
 
   return [newRun, isSuccess] as const;
+};
+
+const errorFormater = (error: any) => {
+  if (typeof error === "string") return { success: false, error };
+  if (error instanceof Error) return { success: false, error: error.message };
+  if (error instanceof ProcessOutput)
+    return { success: false, error: error.stderr };
+
+  return { success: false, error: error };
 };

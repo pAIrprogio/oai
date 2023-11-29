@@ -12,14 +12,7 @@ export interface Ls {
 }
 
 export async function ls({ relativePath }: Ls) {
-  try {
-    const res =
-      await $`(git ls-files ${relativePath}; git ls-files -m  ${relativePath}; git ls-files --others --exclude-standard  ${relativePath}) | sort | uniq`;
-    return res.stdout.trim();
-  } catch (e) {
-    return {
-      success: false,
-      error: e instanceof ProcessOutput ? e.stderr : e,
-    };
-  }
+  const res =
+    await $`(git ls-files ${relativePath}; git ls-files -m  ${relativePath}; git ls-files --others --exclude-standard  ${relativePath}) | sort | uniq`;
+  return res.stdout.trim();
 }

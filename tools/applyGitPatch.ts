@@ -21,42 +21,35 @@ export async function applyGitPatch({
   relativeFilePath,
   patchContent,
 }: ApplyGitPatch) {
-  try {
-    let rest = patchContent.split("\n");
-    let firstLine = "";
-    let headerMatch: RegExpMatchArray | null = null;
+  let rest = patchContent.split("\n");
+  let firstLine = "";
+  let headerMatch: RegExpMatchArray | null = null;
 
-    do {
-      firstLine = rest.shift()!;
-      headerMatch = firstLine.match(/^@@ -(\d+),(\d+) \+(\d+),(\d+) @@/);
-    } while (!headerMatch && rest.length > 0);
+  do {
+    firstLine = rest.shift()!;
+    headerMatch = firstLine.match(/^@@ -(\d+),(\d+) \+(\d+),(\d+) @@/);
+  } while (!headerMatch && rest.length > 0);
 
-    if (!headerMatch)
-      return {
-        success: false,
-        error: "Invalid patch content, must start with @@ -X,X +Y,Y @@",
-      };
-
-    const [_all, rmStart, rmCount, addStart, addCount] = headerMatch;
-
-    // Fix missing last line
-    if (
-      rmCount === "0" &&
-      Number(addStart) - Number(rmStart) === 1 &&
-      rest[0] !== "\n"
-    )
-      rest.unshift("\n");
-
-    const fixedPatchContent = [firstLine, ...rest].join("\n");
-
-    await fsWriteFile("./tmp.patch", fixedPatchContent);
-    await $`patch --no-backup-if-mismatch ${relativeFilePath} ./tmp.patch`;
-    await rm("./tmp.patch");
-    return { success: true };
-  } catch (e) {
+  if (!headerMatch)
     return {
       success: false,
-      error: e instanceof ProcessOutput ? e.stderr : e,
+      error: "Invalid patch content, must start with @@ -X,X +Y,Y @@",
     };
-  }
+
+  const [_all, rmStart, rmCount, addStart, addCount] = headerMatch;
+
+  // Fix missing last line
+  if (
+    rmCount === "0" &&
+    Number(addStart) - Number(rmStart) === 1 &&
+    rest[0] !== "\n"
+  )
+    rest.unshift("\n");
+
+  const fixedPatchContent = [firstLine, ...rest].join("\n");
+
+  await fsWriteFile("./tmp.patch", fixedPatchContent);
+  await $`patch --no-backup-if-mismatch ${relativeFilePath} ./tmp.patch`;
+  await rm("./tmp.patch");
+  return { success: true };
 }

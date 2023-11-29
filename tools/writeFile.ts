@@ -9,13 +9,6 @@ export interface WriteFile {
 }
 
 export async function writeFile({ relativeFilePath, content }: WriteFile) {
-  try {
-    await fsWriteFile(relativeFilePath, content);
-    return { success: true };
-  } catch (error) {
-    return {
-      success: false,
-      error: error,
-    };
-  }
+  await fsWriteFile(relativeFilePath, content);
+  return { success: true };
 }
