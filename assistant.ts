@@ -9,29 +9,36 @@ const defaultSystemPrompt = `You're a senior developer at GAFA. Your objective i
 When modifying files, read the file content with line numbers and use a git patch to apply the changes. Don't wait for confirmation before executing commands`;
 
 const getConfig = () => {
+  const config = {
+    systemPrompt: defaultSystemPrompt,
+    tools: toolsSchema.allTools.map((tool) => ({
+      type: "function" as const,
+      function: tool,
+    })),
+  };
+
   try {
     var configFile = readFileSync("./ai.config.yml", "utf-8");
   } catch (error) {
-    return {
-      systemPrompt: defaultSystemPrompt,
-    };
+    return config;
   }
-  const config = YAML.parse(configFile);
 
-  const noTools = !config.tools;
-  const toolsSet = new Set(config.tools);
-  return {
-    systemPrompt: config.systemPrompt ?? defaultSystemPrompt,
-    tools: toolsSchema.allTools
-      .filter((tool) => noTools || toolsSet.has(tool))
-      .map((tool) => ({
-        type: "function" as const,
-        function: tool,
-      })),
-  };
+  const yamlConfig = YAML.parse(configFile);
+
+  if (yamlConfig.systemPrompt) config.systemPrompt = yamlConfig.systemPrompt;
+
+  if (yamlConfig.tools) {
+    const toolsSet = new Set(yamlConfig.tools);
+    config.tools = config.tools.filter((tool) =>
+      toolsSet.has(tool.function.name),
+    );
+  }
+
+  return config;
 };
 
 const { systemPrompt, tools } = getConfig();
+
 // #region openAIClient
 
 const openai = new OpenAI({
