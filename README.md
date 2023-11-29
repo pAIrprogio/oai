@@ -27,22 +27,7 @@ Any change made to the project will be reflected in the global command without e
 
 ## How to add tools ?
 
-1. Create a new file in `./tools` folder
-2. Write and export an interface for your tool args
-
-   - The name of the interface is the name of the tool in PascalCase
-   - The name of the interface will be camelCased and used as the tool name in the exported schema
-   - Use JSDoc and `@description` or `@default` whenever needed. Keep them on single line.
-   - Do not export other interfaces from the file or it will be recognized as a tool
-
-3. Write and export your tool function,
-
-   - Takes a single arg which is the interface you exported
-   - It's name should be the tool name in camelCase
-   - Errors should be caught and returned as an object like `{ success: false, error: 'error message' }`
-
-4. Add your tool to `tools/index.ts` by adding `export { <toolName> } from "./<toolName>.js"`
-5. Manually run `pnpm gen:tools` to generate the json schema for your tool. **THIS IS NOT AUTOMATIC YET**
+Follow the steps in [docs/add-new-tool.md](docs/add-new-tool.md)
 
 ## Debugging
 
