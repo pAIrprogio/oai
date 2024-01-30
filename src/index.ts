@@ -1,7 +1,9 @@
 import "dotenv/config";
 import { chalk, echo, question, $ } from "zx";
-import { message } from "./assistant.js";
+import { createAssistant, createThread } from "./assistant.js";
 import ora from "ora";
+import OpenAI from "openai";
+import baseAssistant from "./assistants/baseAssistant.js";
 
 // Disable logging of stdout/stderr
 $.verbose = false;
@@ -9,10 +11,18 @@ $.verbose = false;
 // Prevent forgetting case in switch statements
 const never = (input: never) => {};
 echo(chalk.bold.blue("Assistant: ") + "Hello, how can I help you?");
+const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const assistant = await createAssistant(baseAssistant, {
+  openAIClient: client,
+});
+const thread = await createThread({
+  assistant,
+  openAIClient: client,
+});
 
 while (true) {
   const userInput = await question(chalk.bold.magenta("User: "));
-  const res = message(userInput);
+  const res = thread.sendMessage(userInput);
 
   let currentSpinner = ora({
     text: "Waiting",
@@ -25,36 +35,17 @@ while (true) {
   // TODO: Find a way to use it
 
   for await (let status of res) {
-    // Check here to clear TS errors
-    if (typeof status === "function") throw new Error("Unexpected function");
-
-    if (
-      previousActions &&
-      status.type !== "executing_actions" &&
-      status.type !== "executing_actions_failure"
-    ) {
-      previousActions = null;
-      currentSpinner.succeed();
-      currentSpinner = ora({
-        text: "Waiting",
-        color: "cyan",
-      }).start();
-    }
-
     switch (status.type) {
-      case "interruptFn":
-        interrupt = status.interrupt;
-        process.on("SIGINT", interrupt);
+      case "message_sent":
         break;
-      case "executing_actions_failure":
-        currentSpinner.fail();
+      case "executing_actions_done":
+        previousActions = null;
+        status.isSuccess ? currentSpinner.succeed() : currentSpinner.fail();
         currentSpinner = ora({
           text: "Waiting",
-          color: "blue",
+          color: "cyan",
         }).start();
-        previousActions = null;
         break;
-
       case "executing_actions":
         const actions = status.tools.join(", ");
 

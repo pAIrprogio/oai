@@ -1,48 +1,49 @@
+import { map, toArray, zip } from "iter-tools";
 import OpenAI from "openai";
-import { zip, map, toArray } from "iter-tools";
-import { AssistantCreateParams } from "openai/resources/beta/assistants/assistants.mjs";
+import { AssistantConfig } from "./assistant.utils.js";
+import {
+  BaseToolArgs,
+  ErrorToolOutput,
+  Tool,
+  toOpenAiTools,
+  toToolsMap,
+} from "./tool.utils.js";
 
 type PromiseValue<T> = T extends Promise<infer U> ? U : never;
+type AsyncGeneratorValue<T> = T extends AsyncGenerator<infer U, any, any>
+  ? U
+  : never;
 
-const defaultErrorFormater = (error: any) => {
-  if (typeof error === "string") return { success: false, error };
-  if (error instanceof Error) return { success: false, error: error.message };
+const defaultErrorFormater = (error: any): ErrorToolOutput => {
+  if (typeof error === "string") return { success: false as const, error };
+  if (error instanceof Error)
+    return { success: false as const, error: error.message };
 
   return { success: false as const, error: JSON.stringify(error) };
 };
 
 type ErrorFormaterFn = typeof defaultErrorFormater;
 
-const defaultSystemPrompt = `You're a senior developer at GAFA. Your objective is to assist the user into planning and executing on development tasks.
-When modifying files, read the file content with line numbers and use a git patch to apply the changes. Don't wait for confirmation before executing commands`;
-
-export type ToolFn = (...args: any[]) => Promise<any>;
-
-export type AssistantConfig = {
+export type Config = {
   openAIClient: OpenAI;
-  systemPrompt?: string;
-  toolsSchema?: (AssistantCreateParams.AssistantToolsFunction["function"])[];
-  toolsFns?: {
-    [key: string]: ToolFn;
-  };
   errorFormater?: ErrorFormaterFn;
 };
 
-export const createAssistant = async (config: AssistantConfig) => {
+export const createAssistant = async <T extends Array<Tool>>(
+  assistantConfig: AssistantConfig<T>,
+  config: Config,
+) => {
   const openAIClient = config.openAIClient;
-  const systemPrompt = config.systemPrompt ?? defaultSystemPrompt;
-  const toolsSchema = config.toolsSchema ?? [];
-  const toolsFns = config.toolsFns ?? {};
+  const systemPrompt = assistantConfig.systemPrompt;
+  const toolsSchema = toOpenAiTools(assistantConfig.tools);
+  const toolsMap = toToolsMap(assistantConfig.tools);
   const errorFormater = config.errorFormater ?? defaultErrorFormater;
 
   const openAIAssistant = await openAIClient.beta.assistants.create({
     name: "pAIprog",
     model: "gpt-4-1106-preview",
     instructions: systemPrompt,
-    tools: toolsSchema.map((tool) => ({
-      type: "function",
-      function: tool,
-    }))
+    tools: toolsSchema,
   });
 
   const executeFunctions = async (run: OpenAI.Beta.Threads.Runs.Run) => {
@@ -58,21 +59,24 @@ export const createAssistant = async (config: AssistantConfig) => {
 
     const outputPromises = toolCalls.map((toolCall) => {
       if (toolCall.type !== "function") {
-        return { success: false, error: "Unsupported tool call type" };
+        return {
+          success: false,
+          error: "Unsupported tool call type",
+        } as ErrorToolOutput;
       }
 
       const functionName = toolCall.function.name as keyof typeof toolsSchema;
 
       const functionArguments = JSON.parse(toolCall.function.arguments);
-      const fn = toolsFns[functionName as string];
+      const tool = toolsMap[functionName as string];
 
-      if (!fn)
+      if (!tool)
         return {
           success: false,
           error: `Unsupported tool function ${functionName as string}`,
-        };
+        } as ErrorToolOutput;
 
-      const output = fn(functionArguments).catch(errorFormater);
+      const output = tool.call(functionArguments).catch(errorFormater);
 
       return output;
     });
@@ -85,22 +89,20 @@ export const createAssistant = async (config: AssistantConfig) => {
       ([toolCall, output]) => {
         return {
           tool_call_id: toolCall.id,
-          output: JSON.stringify(output ?? { success: true }),
+          output,
         };
       },
       zip(toolCalls, outputs),
     );
 
-    const isSuccess = outputs.every(
-      (output) => !(output instanceof Object) || output.success,
-    );
+    const isSuccess = outputs.every((output) => output.success === true);
 
     return [toArray(toolsOutput), isSuccess] as const;
-  }
+  };
 
   return {
     openAIAssistant,
-    executeFunctions
+    executeFunctions,
   };
 };
 
@@ -110,28 +112,53 @@ export type ThreadConfig = {
   openAIClient: OpenAI;
   assistant: Assistant;
   pollingInterval?: number;
-}
+};
 
 export async function createThread(config: ThreadConfig) {
-  const { assistant: defaultAssistant, openAIClient, pollingInterval = 500 } = config;
-  const openAIThread = await openAIClient.beta.threads.create({});
+  const {
+    assistant: defaultAssistant,
+    openAIClient,
+    pollingInterval = 500,
+  } = config;
 
+  const openAIThread = await openAIClient.beta.threads.create({});
+  let currentCancel = async () => {};
+
+  /**
+   * Cancel the current run
+   */
+  const cancel = () => currentCancel();
+
+  /**
+   * Send a new message to the thread
+   */
   async function* sendMessage(text: string, assistant?: Assistant) {
     let run: OpenAI.Beta.Threads.Runs.Run;
     let isInterrupted = false;
 
-    const cancelRun = async () => {
+    currentCancel = async () => {
       isInterrupted = true;
       if (!run) return;
-      await openAIClient.beta.threads.runs.cancel(openAIThread.id, run.id).catch(() => {
-        // Ignore error when trying to cancel a cancelled or completed run
-      });
+      await openAIClient.beta.threads.runs
+        .cancel(openAIThread.id, run.id)
+        .catch(() => {
+          // Ignore error when trying to cancel a cancelled or completed run
+        });
     };
 
-    await openAIClient.beta.threads.messages.create(openAIThread.id, {
-      role: "user",
+    const message = await openAIClient.beta.threads.messages.create(
+      openAIThread.id,
+      {
+        role: "user",
+        content: text,
+      },
+    );
+
+    yield {
+      type: "message_sent" as const,
+      id: message.id,
       content: text,
-    });
+    };
 
     const runAssistant = assistant ?? defaultAssistant;
 
@@ -147,7 +174,10 @@ export async function createThread(config: ThreadConfig) {
       ) {
         await new Promise((resolve) => setTimeout(resolve, pollingInterval));
         yield { type: run.status };
-        run = await openAIClient.beta.threads.runs.retrieve(openAIThread.id, run.id);
+        run = await openAIClient.beta.threads.runs.retrieve(
+          openAIThread.id,
+          run.id,
+        );
         continue;
       }
 
@@ -170,19 +200,44 @@ export async function createThread(config: ThreadConfig) {
       }
 
       if (run.status === "requires_action") {
-        const toolsNames =
-          run.required_action?.submit_tool_outputs.tool_calls.map(
-            (tool) => tool.function.name,
-          ) ?? [];
-        yield { type: "executing_actions" as const, tools: toolsNames };
+        const tools = run.required_action?.submit_tool_outputs.tool_calls ?? [];
+
+        const mappedTools = tools.map((tool) => ({
+          id: tool.id,
+          name: tool.function.name,
+          args: JSON.parse(tool.function.arguments),
+        }));
+
+        yield { type: "executing_actions" as const, tools: mappedTools };
+
         try {
-          const [tool_outputs, isSuccess] = await runAssistant.executeFunctions(run);
+          const [toolOutputs, isSuccess] =
+            await runAssistant.executeFunctions(run);
+
           const newRun = await openAIClient.beta.threads.runs.submitToolOutputs(
             openAIThread.id,
             run.id,
-            { tool_outputs },
+            {
+              tool_outputs: toolOutputs.map((tool) => ({
+                tool_call_id: tool.tool_call_id,
+                output: JSON.stringify(tool.output),
+              })),
+            },
           );
-          if (!isSuccess) yield { type: "executing_actions_failure" as const };
+
+          const mappedToolsWithOutput = mappedTools.map((tool, index) => ({
+            ...tool,
+            isSuccess: toolOutputs[index].output.success,
+            output: toolOutputs[index].output.output,
+            error: toolOutputs[index].output.error,
+          }));
+
+          yield {
+            type: "executing_actions_done" as const,
+            isSuccess,
+            tools: mappedToolsWithOutput,
+          };
+
           run = newRun;
         } catch (error) {
           // Recover from error when trying to send tool outputs on a cancelled run
@@ -192,12 +247,19 @@ export async function createThread(config: ThreadConfig) {
       }
 
       if (run.status === "completed") {
-        const messages = await openAIClient.beta.threads.messages.list(openAIThread.id);
+        const messages = await openAIClient.beta.threads.messages.list(
+          openAIThread.id,
+        );
+
         const lastMessage = messages.data[0].content[0];
 
         if (lastMessage.type === "text") {
           // TODO: add annotations
-          yield { type: "completed" as const, message: lastMessage.text.value };
+          yield {
+            type: "completed" as const,
+            message: lastMessage.text.value,
+            id: messages.data[0].id,
+          };
           return;
         }
       }
@@ -207,7 +269,10 @@ export async function createThread(config: ThreadConfig) {
   return {
     openAIThread,
     sendMessage,
+    cancel,
   };
 }
 
 export type Thread = PromiseValue<ReturnType<typeof createThread>>;
+
+export type Message = AsyncGeneratorValue<ReturnType<Thread["sendMessage"]>>;

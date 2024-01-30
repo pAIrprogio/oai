@@ -2,5 +2,6 @@
   "editor.formatOnSave": true,
   "yaml.schemas": {
     "./schemas/ai-config-schema.json": "ai.config.yml"
-  }
+  },
+  "typescript.tsdk": "node_modules/typescript/lib"
 }
