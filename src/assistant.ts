@@ -2,7 +2,6 @@ import { map, toArray, zip } from "iter-tools";
 import OpenAI from "openai";
 import { AssistantConfig } from "./assistant.utils.js";
 import {
-  BaseToolArgs,
   ErrorToolOutput,
   Tool,
   toOpenAiTools,
@@ -67,7 +66,6 @@ export const createAssistant = async <T extends Array<Tool>>(
 
       const functionName = toolCall.function.name as keyof typeof toolsSchema;
 
-      const functionArguments = JSON.parse(toolCall.function.arguments);
       const tool = toolsMap[functionName as string];
 
       if (!tool)
@@ -76,7 +74,19 @@ export const createAssistant = async <T extends Array<Tool>>(
           error: `Unsupported tool function ${functionName as string}`,
         } as ErrorToolOutput;
 
-      const output = tool.call(functionArguments).catch(errorFormater);
+      const functionArguments = tool.argsSchema.safeParse(
+        JSON.parse(toolCall.function.arguments),
+      );
+
+      if (!functionArguments.success) {
+        return {
+          success: false,
+          error: `Invalid arguments for function ${functionName as string}`,
+          argErrors: functionArguments.error.format(),
+        } as ErrorToolOutput;
+      }
+
+      const output = tool.call(functionArguments.data).catch(errorFormater);
 
       return output;
     });
@@ -113,6 +123,12 @@ export type ThreadConfig = {
   assistant: Assistant;
   pollingInterval?: number;
 };
+
+export interface ToolCall {
+  id: string;
+  name: string;
+  args: any;
+}
 
 export async function createThread(config: ThreadConfig) {
   const {
@@ -206,9 +222,9 @@ export async function createThread(config: ThreadConfig) {
           id: tool.id,
           name: tool.function.name,
           args: JSON.parse(tool.function.arguments),
-        }));
+        })) satisfies ToolCall[];
 
-        yield { type: "executing_actions" as const, tools: mappedTools };
+        yield { type: "executing_tools" as const, tools: mappedTools };
 
         try {
           const [toolOutputs, isSuccess] =
@@ -233,7 +249,7 @@ export async function createThread(config: ThreadConfig) {
           }));
 
           yield {
-            type: "executing_actions_done" as const,
+            type: "executing_tools_done" as const,
             isSuccess,
             tools: mappedToolsWithOutput,
           };

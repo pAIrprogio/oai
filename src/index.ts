@@ -1,12 +1,20 @@
 import "dotenv/config";
 import { chalk, echo, question, $ } from "zx";
-import { createAssistant, createThread } from "./assistant.js";
+import { ToolCall, createAssistant, createThread } from "./assistant.js";
 import ora from "ora";
 import OpenAI from "openai";
 import baseAssistant from "./assistants/baseAssistant.js";
 
 // Disable logging of stdout/stderr
 $.verbose = false;
+
+function displayToolCall(action: ToolCall) {
+  return `${action.name} (${JSON.stringify(action.args)})`;
+}
+
+function displayToolCalls(actions: ToolCall[]) {
+  return actions.map(displayToolCall).join(", ");
+}
 
 // Prevent forgetting case in switch statements
 const never = (input: never) => {};
@@ -15,6 +23,7 @@ const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const assistant = await createAssistant(baseAssistant, {
   openAIClient: client,
 });
+
 const thread = await createThread({
   assistant,
   openAIClient: client,
@@ -22,13 +31,13 @@ const thread = await createThread({
 
 while (true) {
   const userInput = await question(chalk.bold.magenta("User: "));
-  const res = thread.sendMessage(userInput);
+  const res = thread.sendMessage(userInput, assistant);
 
   let currentSpinner = ora({
     text: "Waiting",
     color: "blue",
   }).start();
-  let previousActions = null;
+  let previousToolCalls = null;
 
   // Grab the interrupt function
   let interrupt: (() => Promise<void>) | null = null;
@@ -38,29 +47,29 @@ while (true) {
     switch (status.type) {
       case "message_sent":
         break;
-      case "executing_actions_done":
-        previousActions = null;
+      case "executing_tools_done":
+        previousToolCalls = null;
         status.isSuccess ? currentSpinner.succeed() : currentSpinner.fail();
         currentSpinner = ora({
           text: "Waiting",
           color: "cyan",
         }).start();
         break;
-      case "executing_actions":
-        const actions = status.tools.join(", ");
+      case "executing_tools":
+        const toolCalls = displayToolCalls(status.tools);
 
-        if (previousActions && actions !== previousActions) {
+        if (previousToolCalls && toolCalls !== previousToolCalls) {
           currentSpinner.color = "green";
           currentSpinner.succeed();
           currentSpinner = ora({
-            text: "Executing actions: " + actions,
+            text: "Executing tools: " + toolCalls,
             color: "cyan",
           }).start();
         } else {
-          currentSpinner.text = "Executing actions: " + actions;
+          currentSpinner.text = "Executing tools: " + toolCalls;
         }
 
-        previousActions = actions;
+        previousToolCalls = toolCalls;
         break;
 
       case "completed":

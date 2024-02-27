@@ -1,0 +1,4 @@
+- [ ] Hot Reloading of tools
+- [ ] Assistant swapping
+- [ ] Save/Restore chats
+- [ ] Better UX
