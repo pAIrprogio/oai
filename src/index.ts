@@ -1,9 +1,10 @@
 import "dotenv/config";
 import { chalk, echo, question, $ } from "zx";
-import { ToolCall, createAssistant, createThread } from "./assistant.js";
+import { ToolCall, createThread, toRunableAssistant } from "./assistant.js";
 import ora from "ora";
 import OpenAI from "openai";
 import baseAssistant from "./assistants/baseAssistant.js";
+import { syncCachedAssistant } from "./storage/storage.repository.js";
 
 // Disable logging of stdout/stderr
 $.verbose = false;
@@ -18,20 +19,21 @@ function displayToolCalls(actions: ToolCall[]) {
 
 // Prevent forgetting case in switch statements
 const never = (input: never) => {};
-echo(chalk.bold.blue("Assistant: ") + "Hello, how can I help you?");
 const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-const assistant = await createAssistant(baseAssistant, {
-  openAIClient: client,
-});
+const { remoteId: assistantId } = await syncCachedAssistant(
+  client,
+  baseAssistant,
+);
+const runableAssistant = toRunableAssistant(assistantId, baseAssistant);
 
-const thread = await createThread({
-  assistant,
-  openAIClient: client,
-});
+const thread = await createThread(client, runableAssistant);
+
+echo(chalk.bold.blue("Assistant: ") + "Hello, how can I help you?");
 
 while (true) {
   const userInput = await question(chalk.bold.magenta("User: "));
-  const res = thread.sendMessage(userInput, assistant);
+  echo(chalk.bold.blue("Assistant: "));
+  const res = thread.sendMessage(userInput, runableAssistant);
 
   let currentSpinner = ora({
     text: "Waiting",
@@ -75,7 +77,7 @@ while (true) {
       case "completed":
         currentSpinner.color = "green";
         currentSpinner.stop();
-        echo(chalk.bold.blue("Assistant: "), status.message);
+        echo(status.message);
         break;
 
       case "failed":

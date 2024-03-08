@@ -15,10 +15,14 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@types/node": "^20.11.24",
+    "better-sqlite3": "^9.4.3",
     "chalk": "^5.3.0",
     "dotenv": "^16.3.1",
+    "drizzle-orm": "^0.29.4",
     "iter-tools": "^7.5.3",
     "lodash": "^4.17.21",
+    "moderndash": "^3.11.0",
     "openai": "^4.20.0",
     "ora": "^7.0.1",
     "tsx": "^4.5.0",
@@ -27,7 +31,9 @@
     "zx": "^7.2.3"
   },
   "devDependencies": {
+    "@types/better-sqlite3": "^7.6.9",
     "@types/lodash": "^4.14.202",
+    "drizzle-kit": "^0.20.14",
     "prettier": "^3.1.0",
     "typescript": "^5.3.3",
     "vitest": "^1.2.2"

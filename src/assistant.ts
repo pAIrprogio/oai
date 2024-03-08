@@ -23,29 +23,14 @@ const defaultErrorFormater = (error: any): ErrorToolOutput => {
 
 type ErrorFormaterFn = typeof defaultErrorFormater;
 
-export type Config = {
-  openAIClient: OpenAI;
-  errorFormater?: ErrorFormaterFn;
-};
-
-export const createAssistant = async <T extends Array<Tool>>(
+const toolRunnerFactory = <T extends Array<Tool>>(
   assistantConfig: AssistantConfig<T>,
-  config: Config,
+  errorFormater: ErrorFormaterFn = defaultErrorFormater,
 ) => {
-  const openAIClient = config.openAIClient;
-  const systemPrompt = assistantConfig.systemPrompt;
   const toolsSchema = toOpenAiTools(assistantConfig.tools);
   const toolsMap = toToolsMap(assistantConfig.tools);
-  const errorFormater = config.errorFormater ?? defaultErrorFormater;
 
-  const openAIAssistant = await openAIClient.beta.assistants.create({
-    name: "pAIprog",
-    model: "gpt-4-1106-preview",
-    instructions: systemPrompt,
-    tools: toolsSchema,
-  });
-
-  const executeFunctions = async (run: OpenAI.Beta.Threads.Runs.Run) => {
+  return async (run: OpenAI.Beta.Threads.Runs.Run) => {
     if (!run.required_action) {
       throw new Error("Empty tool function to execute");
     }
@@ -109,18 +94,24 @@ export const createAssistant = async <T extends Array<Tool>>(
 
     return [toArray(toolsOutput), isSuccess] as const;
   };
+};
 
+export type ToolRunner = ReturnType<typeof toolRunnerFactory>;
+
+export const toRunableAssistant = (
+  assistantId: string,
+  assistantConfig: AssistantConfig,
+) => {
+  const toolRunner = toolRunnerFactory(assistantConfig);
   return {
-    openAIAssistant,
-    executeFunctions,
+    id: assistantId,
+    toolRunner,
   };
 };
 
-export type Assistant = PromiseValue<ReturnType<typeof createAssistant>>;
+export type RunableAssistant = ReturnType<typeof toRunableAssistant>;
 
 export type ThreadConfig = {
-  openAIClient: OpenAI;
-  assistant: Assistant;
   pollingInterval?: number;
 };
 
@@ -130,12 +121,12 @@ export interface ToolCall {
   args: any;
 }
 
-export async function createThread(config: ThreadConfig) {
-  const {
-    assistant: defaultAssistant,
-    openAIClient,
-    pollingInterval = 500,
-  } = config;
+export async function createThread(
+  openAIClient: OpenAI,
+  threadAssistant: RunableAssistant,
+  config: ThreadConfig = {},
+) {
+  const { pollingInterval = 500 } = config;
 
   const openAIThread = await openAIClient.beta.threads.create({});
   let currentCancel = async () => {};
@@ -148,7 +139,10 @@ export async function createThread(config: ThreadConfig) {
   /**
    * Send a new message to the thread
    */
-  async function* sendMessage(text: string, assistant?: Assistant) {
+  async function* sendMessage(
+    text: string,
+    assistant: RunableAssistant = threadAssistant,
+  ) {
     let run: OpenAI.Beta.Threads.Runs.Run;
     let isInterrupted = false;
 
@@ -176,10 +170,8 @@ export async function createThread(config: ThreadConfig) {
       content: text,
     };
 
-    const runAssistant = assistant ?? defaultAssistant;
-
     run = await openAIClient.beta.threads.runs.create(openAIThread.id, {
-      assistant_id: runAssistant.openAIAssistant.id,
+      assistant_id: assistant.id,
     });
 
     while (true) {
@@ -227,8 +219,7 @@ export async function createThread(config: ThreadConfig) {
         yield { type: "executing_tools" as const, tools: mappedTools };
 
         try {
-          const [toolOutputs, isSuccess] =
-            await runAssistant.executeFunctions(run);
+          const [toolOutputs, isSuccess] = await assistant.toolRunner(run);
 
           const newRun = await openAIClient.beta.threads.runs.submitToolOutputs(
             openAIThread.id,

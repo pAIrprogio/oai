@@ -1,16 +1,6 @@
 import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
 
-export interface BaseToolArgs {
-  [key: string]:
-    | null
-    | string
-    | number
-    | boolean
-    | Array<BaseToolArgs>
-    | BaseToolArgs;
-}
-
 export type SuccessToolOutput = {
   success: true;
   output: any;
@@ -25,14 +15,14 @@ export type ErrorToolOutput = {
 
 export type ToolOutput = SuccessToolOutput | ErrorToolOutput;
 
-export interface Tool<Args extends BaseToolArgs = BaseToolArgs> {
+export interface Tool<Args = any> {
   name: string;
   description: string;
   argsSchema: z.ZodSchema<Args>;
   call: (args: Args) => Promise<ToolOutput>;
 }
 
-export const toOpenAiTool = <Args extends BaseToolArgs>(tool: Tool<Args>) => {
+export const toOpenAiTool = <Args = any>(tool: Tool<Args>) => {
   const parameters = zodToJsonSchema(tool.argsSchema);
   delete parameters.$schema;
   return {
@@ -45,7 +35,8 @@ export const toOpenAiTool = <Args extends BaseToolArgs>(tool: Tool<Args>) => {
   };
 };
 
-export const toOpenAiTools = (tools: Array<Tool>) => {
+export const toOpenAiTools = (tools: Array<Tool> | undefined) => {
+  if (!tools) return [];
   return tools.map(toOpenAiTool);
 };
 
