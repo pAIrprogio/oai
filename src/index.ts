@@ -5,6 +5,8 @@ import ora from "ora";
 import OpenAI from "openai";
 import baseAssistant from "./assistants/baseAssistant.js";
 import { syncCachedAssistant } from "./storage/storage.repository.js";
+import { never } from "./ts.utils.js";
+import { toTerminal } from "./md.utils.js";
 
 // Disable logging of stdout/stderr
 $.verbose = false;
@@ -17,22 +19,31 @@ function displayToolCalls(actions: ToolCall[]) {
   return actions.map(displayToolCall).join(", ");
 }
 
-// Prevent forgetting case in switch statements
-const never = (input: never) => {};
 const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-const { remoteId: assistantId } = await syncCachedAssistant(
-  client,
-  baseAssistant,
+const {
+  remoteId: assistantId,
+  name,
+  version,
+} = await syncCachedAssistant(client, baseAssistant);
+
+echo(
+  chalk.yellow("\nUsing assistant: ") +
+    `${name} - v${version}\n` +
+    chalk.underline.yellowBright(
+      `https://platform.openai.com/playground?mode=assistant&assistant=${assistantId}`,
+    ),
 );
+
 const runableAssistant = toRunableAssistant(assistantId, baseAssistant);
 
 const thread = await createThread(client, runableAssistant);
 
-echo(chalk.bold.blue("Assistant: ") + "Hello, how can I help you?");
+echo(chalk.bold.blue("\nAssistant: ") + "\nHello, how can I help you?");
 
 while (true) {
-  const userInput = await question(chalk.bold.magenta("User: "));
-  echo(chalk.bold.blue("Assistant: "));
+  echo(chalk.bold.magenta("\nUser: "));
+  const userInput = await question();
+  echo(chalk.bold.blue("\nAssistant: "));
   const res = thread.sendMessage(userInput, runableAssistant);
 
   let currentSpinner = ora({
@@ -77,7 +88,7 @@ while (true) {
       case "completed":
         currentSpinner.color = "green";
         currentSpinner.stop();
-        echo(status.message);
+        echo(toTerminal(status.message));
         break;
 
       case "failed":

@@ -22,6 +22,8 @@
     "drizzle-orm": "^0.29.4",
     "iter-tools": "^7.5.3",
     "lodash": "^4.17.21",
+    "marked": "^12.0.1",
+    "marked-terminal": "^7.0.0",
     "moderndash": "^3.11.0",
     "openai": "^4.20.0",
     "ora": "^7.0.1",
@@ -33,6 +35,7 @@
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.9",
     "@types/lodash": "^4.14.202",
+    "@types/marked-terminal": "^6.1.1",
     "drizzle-kit": "^0.20.14",
     "prettier": "^3.1.0",
     "typescript": "^5.3.3",
