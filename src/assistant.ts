@@ -7,6 +7,7 @@ import {
   toOpenAiTools,
   toToolsMap,
 } from "./tool.utils.js";
+import { waitFor } from "./node.utils.js";
 
 type PromiseValue<T> = T extends Promise<infer U> ? U : never;
 type AsyncGeneratorValue<T> = T extends AsyncGenerator<infer U, any, any>
@@ -145,6 +146,20 @@ export async function createThread(
   ) {
     let run: OpenAI.Beta.Threads.Runs.Run;
     let isInterrupted = false;
+    let previousStatus: OpenAI.Beta.Threads.Runs.Run["status"] | null = null;
+    let responsesCount = 0;
+
+    const nextRun = async () => {
+      run = await openAIClient.beta.threads.runs.retrieve(
+        openAIThread.id,
+        run.id,
+      );
+    };
+
+    const nextRunWithInterval = async () => {
+      await waitFor(pollingInterval);
+      await nextRun();
+    };
 
     currentCancel = async () => {
       isInterrupted = true;
@@ -175,17 +190,17 @@ export async function createThread(
     });
 
     while (true) {
+      if (run.status === previousStatus) {
+        await nextRunWithInterval();
+        continue;
+      }
       if (
         run.status === "queued" ||
         run.status === "in_progress" ||
         run.status === "cancelling"
       ) {
-        await new Promise((resolve) => setTimeout(resolve, pollingInterval));
         yield { type: run.status };
-        run = await openAIClient.beta.threads.runs.retrieve(
-          openAIThread.id,
-          run.id,
-        );
+        await nextRunWithInterval();
         continue;
       }
 
