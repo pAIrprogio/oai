@@ -24,11 +24,12 @@ const {
   remoteId: assistantId,
   name,
   version,
+  state: assistantState,
 } = await syncCachedAssistant(client, baseAssistant);
 
 echo(
   chalk.yellow("\nUsing assistant: ") +
-    `${name} - v${version}\n` +
+    `${name} - v${version} (${assistantState})\n` +
     chalk.underline.yellowBright(
       `https://platform.openai.com/playground?mode=assistant&assistant=${assistantId}`,
     ),

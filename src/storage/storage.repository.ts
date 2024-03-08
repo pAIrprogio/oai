@@ -93,6 +93,7 @@ export async function syncCachedAssistant(
       remoteId: remoteAssistant.id,
       name: assistantConfig.name,
       version: dbAssistant.version,
+      state: "created" as const,
     };
   }
 
@@ -115,6 +116,7 @@ export async function syncCachedAssistant(
       remoteId: remoteAssistant.id,
       name: assistantConfig.name,
       version,
+      state: "updated" as const,
     };
   }
 
@@ -128,5 +130,6 @@ export async function syncCachedAssistant(
     remoteId: remoteAssistant.id,
     name: assistantConfig.name,
     version: storedAssistantConfig.version,
+    state: "cached" as const,
   };
 }
