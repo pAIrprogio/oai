@@ -1,8 +1,8 @@
-import { drizzle } from "drizzle-orm/better-sqlite3";
-import Database from "better-sqlite3";
+import { drizzle } from "drizzle-orm/bun-sqlite";
+import { Database } from "bun:sqlite";
 import { join } from "path";
 import * as schema from "./storage.schema.js";
-import { migrate } from "drizzle-orm/better-sqlite3/migrator";
+import { migrate } from "drizzle-orm/bun-sqlite/migrator";
 import { __rootDir } from "../node.utils.js";
 import { existsSync, mkdirSync } from "fs";
 

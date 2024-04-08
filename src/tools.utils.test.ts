@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "bun:test";
 import { toOpenAiTool, toOpenAiTools } from "./tool.utils.js";
 import { ls } from "./tools/ls.js";
 import { readFile } from "./tools/readFile.js";

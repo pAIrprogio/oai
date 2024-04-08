@@ -8,14 +8,18 @@ https://github.com/pAIrprogio/assistant-cli-playground/assets/1863461/1256ad23-c
 
 - Runs an OpenAI GPT-4V assistant from the command line
 - Execute tools from the command line as required
-- Generates the JSON schema for your tools from TS interfaces
+- Auto-generates JSON schema for your tools from zod validators
 - Access it globally from the `ai` command in your terminal
 
 ## Installation
 
+Requirements:
+
+- [bun](https://bun.sh/)
+
 ```bash
 git clone git@github.com:pAIrprogio/gpt-assistant-cli-playground.git
-pnpm install
+bun install
 ```
 
 ## Configure
@@ -27,7 +31,7 @@ pnpm install
 
 ## CLI Usage
 
-To install your assistant globally and access it with the `ai` command, run `pnpm link -g` or `npm link` in the project's folder.
+To install your assistant globally and access it with the `ai` command, run `bun link` in the project's folder.
 
 Any change made to the project will be reflected in the global command without extra build step.
 
@@ -37,4 +41,6 @@ Follow the steps in [docs/add-new-tool.md](docs/add-new-tool.md)
 
 ## Debugging
 
-The entire project is setup to be debugged in VSCode. Just run the `Run index.ts` task and it will start the app in debug mode in your terminal
+Due to issues in bun-vscode, you need to inspect through an external debugger.
+
+To debug the project, run `bun debug` in the project's folder.
