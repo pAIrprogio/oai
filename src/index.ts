@@ -7,9 +7,16 @@ import baseAssistant from "./assistants/baseAssistant.js";
 import { syncCachedAssistant } from "./storage/storage.repository.js";
 import { never } from "./ts.utils.js";
 import { toTerminal } from "./md.utils.js";
+import { AssistantConfig } from "./assistant.utils.js";
+import select from "@inquirer/select";
 
 // Disable logging of stdout/stderr
 $.verbose = false;
+
+const ASSISTANTS = [baseAssistant];
+const assistantConfigs = new Map<string, AssistantConfig<any>>(
+  ASSISTANTS.map((a) => [a.name, a]),
+);
 
 function displayToolCall(action: ToolCall) {
   return `${action.name} (${JSON.stringify(action.args)})`;
@@ -20,30 +27,66 @@ function displayToolCalls(actions: ToolCall[]) {
 }
 
 const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-const {
-  remoteId: assistantId,
-  name,
-  version,
-  state: assistantState,
-} = await syncCachedAssistant(client, baseAssistant);
+
+let assistant = await syncCachedAssistant(
+  client,
+  assistantConfigs.get("baseAssistant")!,
+);
+let runableAssistant = toRunableAssistant(assistant.remoteId, baseAssistant);
 
 echo(
   chalk.yellow("\nUsing assistant: ") +
-    `${name} - v${version} (${assistantState})\n` +
+    `${assistant.name} - v${assistant.version} (${assistant.state})\n` +
     chalk.underline.yellowBright(
-      `https://platform.openai.com/playground?mode=assistant&assistant=${assistantId}`,
+      `https://platform.openai.com/playground?mode=assistant&assistant=${assistant.remoteId}`,
     ),
 );
 
-const runableAssistant = toRunableAssistant(assistantId, baseAssistant);
-
 const thread = await createThread(client, runableAssistant);
-
-echo(chalk.bold.blue("\nAssistant: ") + "\nHello, how can I help you?");
+echo(
+  chalk.bold.blue("\nAssistant: \n") +
+    `
+Hello, how can I help you?
+Use /a to switch assistant
+`.trim(),
+);
 
 while (true) {
   echo(chalk.bold.magenta("\nUser: "));
   const userInput = await question();
+
+  // Switch assistant
+  if (userInput === "/a") {
+    const assistantName = await select({
+      message: "Which assistant do you want to use?",
+      choices: Array.from(assistantConfigs.values()).map((a) => ({
+        name: a.name,
+        value: a.name,
+        description: a.description,
+      })),
+    });
+
+    if (!assistantName || !assistantConfigs.has(assistantName)) {
+      echo(chalk.red("Invalid assistant name"));
+      continue;
+    }
+
+    const assistantConfig = assistantConfigs.get(assistantName)!;
+    assistant = await syncCachedAssistant(client, assistantConfig);
+    runableAssistant = toRunableAssistant(assistant.remoteId, assistantConfig);
+
+    echo(
+      chalk.yellow("\nUsing assistant: ") +
+        `${assistant.name} - v${assistant.version} (${assistant.state})\n` +
+        chalk.underline.yellowBright(
+          `https://platform.openai.com/playground?mode=assistant&assistant=${assistant.remoteId}`,
+        ),
+    );
+
+    continue;
+  }
+
+  // Respond
   echo(chalk.bold.blue("\nAssistant: "));
   const res = thread.sendMessage(userInput, runableAssistant);
 

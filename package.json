@@ -15,6 +15,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@inquirer/select": "^2.2.2",
     "chalk": "^5.3.0",
     "dotenv": "^16.3.1",
     "drizzle-orm": "^0.30.7",

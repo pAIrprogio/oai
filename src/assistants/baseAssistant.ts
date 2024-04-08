@@ -6,7 +6,7 @@ import { readFile } from "../tools/readFile.js";
 import { writeFile } from "../tools/writeFile.js";
 
 export default {
-  name: "baseAssistant",
+  name: "baseAssistant" as const,
   description: "",
   model: "gpt-4-turbo-preview",
   instructions: `You are a helpful assistant. Use any tools available to help the user`,
