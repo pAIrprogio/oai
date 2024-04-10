@@ -1,4 +1,5 @@
-import { writeFile as fsWriteFile, mkdir } from "fs/promises";
+import { writeFile as fsWriteFile } from "fs/promises";
+import { ensureDir } from "fs-extra";
 import { dirname } from "path";
 import { Tool } from "../tool.utils.js";
 import { z } from "zod";
@@ -17,10 +18,7 @@ export const writeFile = {
   description: "Write text to a file, replacing the current file's content",
   argsSchema,
   async call(args: Args) {
-    const directory = dirname(args.relativeFilePath);
-    await mkdir(directory, { recursive: true }).catch((error) => {
-      if (error.code !== "EEXIST") throw error; // ignore the error if the directory already exists
-    });
+    await ensureDir(dirname(args.relativeFilePath));
     await fsWriteFile(args.relativeFilePath, args.content);
     return { success: true, output: null };
   },

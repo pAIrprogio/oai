@@ -3,17 +3,19 @@ import { chalk, echo, question, $ } from "zx";
 import { ToolCall, createThread, toRunableAssistant } from "./assistant.js";
 import ora from "ora";
 import OpenAI from "openai";
-import baseAssistant from "./assistants/baseAssistant.js";
 import { syncCachedAssistant } from "./storage/storage.repository.js";
 import { never } from "./ts.utils.js";
 import { toTerminal } from "./md.utils.js";
 import { AssistantConfig } from "./assistant.utils.js";
 import select from "@inquirer/select";
+import baseAssistant from "./assistants/base-assistant.js";
+import standardExecutor from "./assistants/standard-executor.js";
 
 // Disable logging of stdout/stderr
 $.verbose = false;
 
-const ASSISTANTS = [baseAssistant];
+const ASSISTANTS = [standardExecutor, baseAssistant];
+const DEFAULT_ASSISTANT = standardExecutor;
 const assistantConfigs = new Map<string, AssistantConfig<any>>(
   ASSISTANTS.map((a) => [a.name, a]),
 );
@@ -28,11 +30,11 @@ function displayToolCalls(actions: ToolCall[]) {
 
 const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-let assistant = await syncCachedAssistant(
-  client,
-  assistantConfigs.get("baseAssistant")!,
+let assistant = await syncCachedAssistant(client, DEFAULT_ASSISTANT);
+let runableAssistant = toRunableAssistant(
+  assistant.remoteId,
+  DEFAULT_ASSISTANT,
 );
-let runableAssistant = toRunableAssistant(assistant.remoteId, baseAssistant);
 
 echo(
   chalk.yellow("\nUsing assistant: ") +
