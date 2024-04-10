@@ -24,7 +24,7 @@
     "marked": "^12.0.1",
     "marked-terminal": "^7.0.0",
     "moderndash": "^3.11.0",
-    "openai": "^4.20.0",
+    "openai": "^4.33.0",
     "ora": "^7.0.1",
     "zod": "^3.22.4",
     "zod-to-json-schema": "^3.22.4",
