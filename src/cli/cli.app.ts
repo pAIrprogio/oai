@@ -1,4 +1,4 @@
-import { chalk, echo, glob, question } from "zx";
+import { $, chalk, echo, glob, question } from "zx";
 import { toDirname } from "../node.utils.js";
 import { AssistantConfig } from "../assistant.utils.js";
 import select from "@inquirer/select";
@@ -8,6 +8,8 @@ import { toRunableAssistant, createThread } from "../assistant.v2.js";
 import { throwOnUnhandled } from "../ts.utils.js";
 import ora, { Ora } from "ora";
 import { lastValueFrom } from "rxjs";
+
+$.verbose = false;
 
 interface AssistantConfigs {
   [key: string]: AssistantConfig;
