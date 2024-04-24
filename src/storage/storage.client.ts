@@ -3,12 +3,12 @@ import { Database } from "bun:sqlite";
 import { join } from "path";
 import * as schema from "./storage.schema.js";
 import { migrate } from "drizzle-orm/bun-sqlite/migrator";
-import { __rootDir } from "../node.utils.js";
+import { ROOTDIR } from "../node.utils.js";
 import { existsSync, mkdirSync } from "fs";
 
-const dataFolderPath = join(__rootDir, "data");
+const dataFolderPath = join(ROOTDIR, "data");
 const dbPath = join(dataFolderPath, "./data.db");
-const migrationsFolder = join(__rootDir, "drizzle");
+const migrationsFolder = join(ROOTDIR, "drizzle");
 
 if (!existsSync(dataFolderPath)) mkdirSync(dataFolderPath);
 

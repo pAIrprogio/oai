@@ -10,9 +10,8 @@ import {
 import { waitFor } from "./node.utils.js";
 
 type PromiseValue<T> = T extends Promise<infer U> ? U : never;
-type AsyncGeneratorValue<T> = T extends AsyncGenerator<infer U, any, any>
-  ? U
-  : never;
+type AsyncGeneratorValue<T> =
+  T extends AsyncGenerator<infer U, any, any> ? U : never;
 
 const defaultErrorFormater = (error: any): ErrorToolOutput => {
   if (typeof error === "string") return { success: false as const, error };
