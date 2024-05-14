@@ -256,7 +256,7 @@ export async function createThread(
         return;
       }
 
-      if (data.type === "retrieval") {
+      if (data.type === "file_search") {
         // TODO
         return;
       }
@@ -277,7 +277,7 @@ export async function createThread(
         return;
       }
 
-      if (data.type === "retrieval") {
+      if (data.type === "file_search") {
         // TODO
         return;
       }
@@ -299,7 +299,7 @@ export async function createThread(
         return;
       }
 
-      if (data.type === "retrieval") {
+      if (data.type === "file_search") {
         // TODO
         return;
       }
