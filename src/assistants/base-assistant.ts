@@ -1,4 +1,4 @@
-import { AssistantConfig } from "../assistant.utils.js";
+import { AssistantConfig } from "../openai/assistant.utils.js";
 import { appendToFile } from "../tools/appendToFile.js";
 import { executeCommand } from "../tools/executeCommand.js";
 import { getUrlContent } from "../tools/getUrlContent.js";

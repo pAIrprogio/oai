@@ -1,5 +1,5 @@
 import { chalk, echo } from "zx";
-import { getVectorStores } from "../../openai.client.js";
+import { getVectorStores } from "../../openai/vector-store.client.js";
 import { renderStore } from "./vector-store.utils.js";
 
 export const listVectorStoresAction = async () => {

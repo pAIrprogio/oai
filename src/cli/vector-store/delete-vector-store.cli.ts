@@ -1,5 +1,5 @@
 import ora from "ora";
-import { deleteVectorStore } from "../../openai.client.js";
+import { deleteVectorStore } from "../../openai/vector-store.client.js";
 import { promptVectorStoreSelection } from "./vector-store.utils.js";
 
 export const deleteVectorStoreAction = async (args?: string) => {

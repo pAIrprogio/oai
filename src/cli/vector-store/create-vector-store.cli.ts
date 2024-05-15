@@ -1,7 +1,10 @@
 import ora from "ora";
 import { echo } from "zx";
 import { input, select } from "@inquirer/prompts";
-import { StoreConfigInput, createVectorStore } from "../../openai.client.js";
+import {
+  StoreConfigInput,
+  createVectorStore,
+} from "../../openai/vector-store.client.js";
 import { renderStore } from "./vector-store.utils.js";
 
 export async function promptVectorStoreConfig(

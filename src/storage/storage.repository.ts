@@ -4,7 +4,7 @@ import {
   AssistantConfig,
   SerializedAssistantConfig,
   serializeAssistantConfig,
-} from "../assistant.utils.js";
+} from "../openai/assistant.utils.js";
 import { db } from "./storage.client.js";
 import { assistants } from "./storage.schema.js";
 import { eq } from "drizzle-orm";

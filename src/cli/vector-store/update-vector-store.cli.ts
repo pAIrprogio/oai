@@ -1,5 +1,8 @@
 import ora from "ora";
-import { getVectorStore, updateVectorStore } from "../../openai.client.js";
+import {
+  getVectorStore,
+  updateVectorStore,
+} from "../../openai/vector-store.client.js";
 import { promptVectorStoreConfig } from "./create-vector-store.cli.js";
 import { promptVectorStoreSelection } from "./vector-store.utils.js";
 

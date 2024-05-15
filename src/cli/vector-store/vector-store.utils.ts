@@ -3,7 +3,10 @@ import { select } from "inquirer-select-pro";
 import { asyncToArray } from "iter-tools";
 import ora from "ora";
 import { echo } from "zx";
-import { VectorStore, getVectorStores } from "../../openai.client.js";
+import {
+  VectorStore,
+  getVectorStores,
+} from "../../openai/vector-store.client.js";
 
 export const toKb = (bytes: number) => (bytes / 1024).toFixed(2);
 

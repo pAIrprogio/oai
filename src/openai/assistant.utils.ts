@@ -1,4 +1,4 @@
-import { Tool, toOpenAiTools } from "./tool.utils.js";
+import { Tool, toOpenAiTools } from "../tool.utils.js";
 
 export interface AssistantConfig<T extends Array<Tool> = Array<Tool<any>>> {
   name: string;

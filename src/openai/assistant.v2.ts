@@ -5,9 +5,9 @@ import {
   Tool,
   toOpenAiTools,
   toToolsMap,
-} from "./tool.utils.js";
+} from "../tool.utils.js";
 import { Subject } from "rxjs";
-import { throwOnUnhandled } from "./ts.utils.js";
+import { throwOnUnhandled } from "../ts.utils.js";
 import { RequiredActionFunctionToolCall } from "openai/resources/beta/threads/index.mjs";
 
 type PromiseValue<T> = T extends Promise<infer U> ? U : never;

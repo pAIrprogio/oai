@@ -1,10 +1,10 @@
 import { $, chalk, echo, glob, question } from "zx";
 import { toDirname } from "../node.utils.js";
-import { AssistantConfig } from "../assistant.utils.js";
+import { AssistantConfig } from "../openai/assistant.utils.js";
 import { select } from "@inquirer/prompts";
 import OpenAI from "openai";
 import { syncCachedAssistant } from "../storage/storage.repository.js";
-import { toRunableAssistant, createThread } from "../assistant.v2.js";
+import { toRunableAssistant, createThread } from "../openai/assistant.v2.js";
 import { throwOnUnhandled } from "../ts.utils.js";
 import ora, { Ora } from "ora";
 import { lastValueFrom } from "rxjs";
