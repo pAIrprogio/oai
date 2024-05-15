@@ -1,6 +1,8 @@
 import { Command } from "commander";
-import { app } from "./app.cli.js";
-import { listVectorStores } from "./list-vector-stores.cli.js";
+import { appAction } from "./app.cli.js";
+import { listVectorStoresAction } from "./vector-store/list-vector-stores.cli.js";
+import { createVectorStoreAction } from "./vector-store/create-vector-store.cli.js";
+import { deleteVectorStoreAction } from "./vector-store/delete-vector-store.cli.js";
 
 const program = new Command();
 program
@@ -18,16 +20,33 @@ const runCommand = program
       return;
     }
 
-    await app();
+    await appAction();
   });
 
 const storesCommand = program
-  .command("docs")
-  .description("Manage your vector stores documents");
+  .command("vector-stores")
+  .alias("vs")
+  .description("Manage your vector stores");
 
 storesCommand
   .command("list")
+  .alias("ls")
   .description("List all vector stores")
-  .action(listVectorStores);
+  .action(listVectorStoresAction);
+
+storesCommand
+  .command("create")
+  .argument("<name>", "The name of the vector store")
+  .description("Create a new vector store")
+  .action(createVectorStoreAction);
+
+storesCommand
+  .command("delete")
+  .alias("rm")
+  .alias("remove")
+  .alias("del")
+  .argument("[id]", "The id of the vector store to delete")
+  .description("Delete a vector store")
+  .action(deleteVectorStoreAction);
 
 program.parse();

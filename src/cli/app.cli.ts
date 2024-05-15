@@ -1,7 +1,7 @@
 import { $, chalk, echo, glob, question } from "zx";
 import { toDirname } from "../node.utils.js";
 import { AssistantConfig } from "../assistant.utils.js";
-import select from "@inquirer/select";
+import { select } from "@inquirer/prompts";
 import OpenAI from "openai";
 import { syncCachedAssistant } from "../storage/storage.repository.js";
 import { toRunableAssistant, createThread } from "../assistant.v2.js";
@@ -76,7 +76,7 @@ function newLine() {
   echo("");
 }
 
-export async function app() {
+export async function appAction() {
   const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
   const assistants = await getAssistantConfigs();
   const runableAssistant = await switchAssistant(client, assistants);
