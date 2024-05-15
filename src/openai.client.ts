@@ -9,15 +9,20 @@ export interface VectorStore {
   filesCount: number;
   size: number;
   playgroundUrl: string;
-  syncConfig?: StoreSyncConfig;
+  syncConfig: StoreSyncConfig;
 }
 
 const client = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-const syncConfigSchema = z.object({
-  type: z.literal("sitemap").default("sitemap"),
+const syncConfigUnmanagedSchema = z.object({
+  type: z.literal("unmanaged").optional().default("unmanaged"),
+  version: z.literal("1").default("1"),
+});
+
+const syncConfigSitemapSchema = z.object({
+  type: z.literal("sitemap"),
   version: z.literal("1").default("1"),
   url: z
     .string()
@@ -43,6 +48,14 @@ const syncConfigSchema = z.object({
     }),
 });
 
+const syncConfigSchema = z
+  .discriminatedUnion("type", [
+    syncConfigUnmanagedSchema,
+    syncConfigSitemapSchema,
+  ])
+  .optional()
+  .default({ type: "unmanaged", version: "1" });
+
 const storeMetadataSchema = z.object({
   syncConfig: syncConfigSchema,
 });
@@ -54,13 +67,40 @@ const storeConfigSchema = z.object({
 
 type StoreSyncConfig = z.infer<typeof syncConfigSchema>;
 
-type StoreConfigInput = z.input<typeof storeConfigSchema>;
+export type StoreConfigInput = z.input<typeof storeConfigSchema>;
 
 const getVectorStorePlaygroundUrl = (storeId: string) =>
   `https://platform.openai.com/storage/vector_stores/${storeId}`;
 
+const jsonParseMetadataFields = (metadata: { [key: string]: string }) => {
+  return Object.fromEntries(
+    Object.entries(metadata).map(([key, value]) => {
+      try {
+        return [key, JSON.parse(value) as any];
+      } catch (e) {
+        return [key, value as string];
+      }
+    }),
+  );
+};
+
+const jsonStringifyMetadataFields = (metadata: { [key: string]: any }) => {
+  return Object.fromEntries(
+    Object.entries(metadata).map(([key, value]) => {
+      try {
+        return [key, JSON.stringify(value)];
+      } catch (e) {
+        return [key, value as string];
+      }
+    }),
+  );
+};
+
 const oaiVectorStoreToVectorStore = (store: OAIVectorStore): VectorStore => {
-  const parsedMetadata = storeMetadataSchema.safeParse(store.metadata);
+  const metadata = jsonParseMetadataFields(
+    store.metadata as { [key: string]: string },
+  );
+  const syncConfig = syncConfigSchema.parse(metadata.syncConfig);
 
   return {
     id: store.id,
@@ -69,9 +109,7 @@ const oaiVectorStoreToVectorStore = (store: OAIVectorStore): VectorStore => {
     filesCount: store.file_counts.total,
     size: store.usage_bytes,
     playgroundUrl: getVectorStorePlaygroundUrl(store.id),
-    syncConfig: parsedMetadata.success
-      ? parsedMetadata.data.syncConfig
-      : undefined,
+    syncConfig,
   };
 };
 
@@ -87,15 +125,29 @@ export async function* getVectorStores() {
   } while (true);
 }
 
+export async function getVectorStore(storeId: string) {
+  const res = await client.beta.vectorStores.retrieve(storeId);
+  return oaiVectorStoreToVectorStore(res);
+}
+
 export async function updateVectorStore(id: string, _config: StoreConfigInput) {
   const config = storeConfigSchema.parse(_config);
-  const res = await client.beta.vectorStores.update(id, config);
+  const res = await client.beta.vectorStores.update(id, {
+    ...config,
+    metadata: jsonStringifyMetadataFields(config.metadata),
+  });
   return oaiVectorStoreToVectorStore(res);
 }
 
 export async function createVectorStore(_config: StoreConfigInput) {
   const config = storeConfigSchema.parse(_config);
-  const res = await client.beta.vectorStores.create(config);
+  const res = await client.beta.vectorStores.create({
+    ...config,
+    metadata: {
+      ...config.metadata,
+      syncConfig: JSON.stringify(config.metadata.syncConfig),
+    },
+  });
 
   return oaiVectorStoreToVectorStore(res);
 }

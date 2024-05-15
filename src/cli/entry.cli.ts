@@ -31,12 +31,13 @@ const storesCommand = program
 storesCommand
   .command("list")
   .alias("ls")
+  .allowExcessArguments(false)
   .description("List all vector stores")
   .action(listVectorStoresAction);
 
 storesCommand
   .command("create")
-  .argument("<name>", "The name of the vector store")
+  .allowExcessArguments(false)
   .description("Create a new vector store")
   .action(createVectorStoreAction);
 
@@ -46,6 +47,7 @@ storesCommand
   .alias("remove")
   .alias("del")
   .argument("[id]", "The id of the vector store to delete")
+  .allowExcessArguments(false)
   .description("Delete a vector store")
   .action(deleteVectorStoreAction);
 
