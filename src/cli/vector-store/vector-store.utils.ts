@@ -18,11 +18,22 @@ export const renderStatus = (status: VectorStore["status"]) => {
   }
 };
 
+export const renderSyncType = (syncType: VectorStore["syncConfig"]["type"]) => {
+  switch (syncType) {
+    case "unmanaged":
+      return chalk.yellow("unmanaged");
+    case "sitemap":
+      return chalk.magenta("sitemap sync");
+    default:
+      return chalk.red("<unknown sync type>");
+  }
+};
+
 export const renderStore = (store: VectorStore) => {
   echo(`${chalk.bold(store.name ?? "<unnamed>")} - ${store.playgroundUrl}`);
   echo(
     chalk.blue(
-      `  ${renderStatus(store.status)} - ${store.filesCount} files / ${toKb(store.size)}kB`,
+      `  ${renderStatus(store.status)} - ${store.filesCount} files / ${toKb(store.size)}kB - ${renderSyncType(store.syncConfig.type)}`,
     ),
   );
 };
