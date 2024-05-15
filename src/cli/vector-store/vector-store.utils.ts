@@ -44,21 +44,27 @@ export const renderStore = (store: VectorStore) => {
 export async function promptVectorStoreSelection(
   message: string,
   multi: false,
+  excludeUnmanaged?: boolean,
 ): Promise<VectorStore>;
 export async function promptVectorStoreSelection(
   message: string,
   multi: true,
+  excludeUnmanaged?: boolean,
 ): Promise<VectorStore[]>;
 export async function promptVectorStoreSelection(
   message: string,
   multi: boolean = false,
+  excludeUnmanaged = false,
 ) {
   let spinner = ora({
     text: "Fetching all vector stores",
     color: "blue",
   }).start();
-  const stores = await asyncToArray(getVectorStores());
+  let stores = await asyncToArray(getVectorStores());
   spinner.stop();
+
+  if (excludeUnmanaged)
+    stores = stores.filter((store) => store.syncConfig.type !== "unmanaged");
 
   const answer = await select({
     message: message,

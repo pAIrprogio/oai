@@ -1,6 +1,6 @@
-import OpenAI from "openai";
 import { VectorStore as OAIVectorStore } from "openai/resources/beta/index.mjs";
 import { z } from "zod";
+import { openaiClient } from "./openai.client.js";
 
 export interface VectorStore {
   id: string;
@@ -11,10 +11,6 @@ export interface VectorStore {
   playgroundUrl: string;
   syncConfig: StoreSyncConfig;
 }
-
-const client = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
 
 const syncConfigUnmanagedSchema = z.object({
   type: z.literal("unmanaged").optional().default("unmanaged"),
@@ -114,7 +110,7 @@ const oaiVectorStoreToVectorStore = (store: OAIVectorStore): VectorStore => {
 };
 
 export async function* getVectorStores() {
-  let res = await client.beta.vectorStores.list();
+  let res = await openaiClient.beta.vectorStores.list();
 
   do {
     for (const store of res.data) {
@@ -126,13 +122,13 @@ export async function* getVectorStores() {
 }
 
 export async function getVectorStore(storeId: string) {
-  const res = await client.beta.vectorStores.retrieve(storeId);
+  const res = await openaiClient.beta.vectorStores.retrieve(storeId);
   return oaiVectorStoreToVectorStore(res);
 }
 
 export async function updateVectorStore(id: string, _config: StoreConfigInput) {
   const config = storeConfigSchema.parse(_config);
-  const res = await client.beta.vectorStores.update(id, {
+  const res = await openaiClient.beta.vectorStores.update(id, {
     ...config,
     metadata: jsonStringifyMetadataFields(config.metadata),
   });
@@ -141,7 +137,7 @@ export async function updateVectorStore(id: string, _config: StoreConfigInput) {
 
 export async function createVectorStore(_config: StoreConfigInput) {
   const config = storeConfigSchema.parse(_config);
-  const res = await client.beta.vectorStores.create({
+  const res = await openaiClient.beta.vectorStores.create({
     ...config,
     metadata: {
       ...config.metadata,
@@ -153,5 +149,5 @@ export async function createVectorStore(_config: StoreConfigInput) {
 }
 
 export async function deleteVectorStore(storeId: string) {
-  await client.beta.vectorStores.del(storeId);
+  await openaiClient.beta.vectorStores.del(storeId);
 }

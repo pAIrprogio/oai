@@ -26,10 +26,13 @@
     "jsonrepair": "^3.6.0",
     "marked": "^12.0.1",
     "marked-terminal": "^7.0.0",
+    "minimatch": "^9.0.4",
     "moderndash": "^3.11.0",
-    "openai": "^4.33.0",
+    "openai": "^4.47.1",
     "ora": "^7.0.1",
     "rxjs": "^7.8.1",
+    "wretch": "^2.8.1",
+    "xml2js": "^0.6.2",
     "zod": "^3.22.4",
     "zod-to-json-schema": "^3.22.4",
     "zx": "^7.2.3"
@@ -37,6 +40,7 @@
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.9",
     "@types/marked-terminal": "^6.1.1",
+    "@types/xml2js": "^0.4.14",
     "drizzle-kit": "^0.20.14",
     "prettier": "^3.1.0",
     "typescript": "^5.3.3",
