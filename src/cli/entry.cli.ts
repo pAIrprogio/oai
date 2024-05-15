@@ -3,6 +3,7 @@ import { appAction } from "./app.cli.js";
 import { listVectorStoresAction } from "./vector-store/list-vector-stores.cli.js";
 import { createVectorStoreAction } from "./vector-store/create-vector-store.cli.js";
 import { deleteVectorStoreAction } from "./vector-store/delete-vector-store.cli.js";
+import { updateVectorStoreAction } from "./vector-store/update-vector-store.cli.js";
 
 const program = new Command();
 program
@@ -50,5 +51,12 @@ storesCommand
   .allowExcessArguments(false)
   .description("Delete a vector store")
   .action(deleteVectorStoreAction);
+
+storesCommand
+  .command("update")
+  .alias("edit")
+  .allowExcessArguments(false)
+  .description("Update a vector store")
+  .action(updateVectorStoreAction);
 
 program.parse();

@@ -27,11 +27,18 @@ export const renderStore = (store: VectorStore) => {
   );
 };
 
-export async function promptVectorStoreSelection(multi: false): Promise<string>;
 export async function promptVectorStoreSelection(
+  message: string,
+  multi: false,
+): Promise<VectorStore>;
+export async function promptVectorStoreSelection(
+  message: string,
   multi: true,
-): Promise<string[]>;
-export async function promptVectorStoreSelection(multi: boolean = false) {
+): Promise<VectorStore[]>;
+export async function promptVectorStoreSelection(
+  message: string,
+  multi: boolean = false,
+) {
   let spinner = ora({
     text: "Fetching all vector stores",
     color: "blue",
@@ -40,7 +47,7 @@ export async function promptVectorStoreSelection(multi: boolean = false) {
   spinner.stop();
 
   const answer = await select({
-    message: "Which vector store do you want to delete?",
+    message: message,
     multiple: multi,
     options: (input) =>
       stores
@@ -51,7 +58,7 @@ export async function promptVectorStoreSelection(multi: boolean = false) {
             store.id.includes(input),
         )
         .map((s) => ({
-          value: s.id,
+          value: s,
           name: `${s.name ?? chalk.italic("<unnamed>")} (${s.id}) | ${s.filesCount} files / ${toKb(s.size)}kB`,
         })),
   });
