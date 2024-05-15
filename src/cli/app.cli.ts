@@ -76,7 +76,7 @@ function newLine() {
   echo("");
 }
 
-export async function cliApp() {
+export async function app() {
   const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
   const assistants = await getAssistantConfigs();
   const runableAssistant = await switchAssistant(client, assistants);

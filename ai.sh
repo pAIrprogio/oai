@@ -3,7 +3,7 @@
 set -e
 
 dotenv_path="$(dirname "$(realpath "$0")")/.env"
-index_ts_path="$(dirname "$(realpath "$0")")/src/cli/cli.entry.ts"
+index_ts_path="$(dirname "$(realpath "$0")")/src/cli/entry.cli.ts"
 
 if [ ! -f "$dotenv_path" ]; then
   echo "Error: .env file not found"
