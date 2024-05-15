@@ -76,7 +76,7 @@ function newLine() {
   echo("");
 }
 
-async function run() {
+export async function cliApp() {
   const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
   const assistants = await getAssistantConfigs();
   const runableAssistant = await switchAssistant(client, assistants);
@@ -188,5 +188,3 @@ async function run() {
   });
   return lastValueFrom(thread.assistantResponses$);
 }
-
-await run();
