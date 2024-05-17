@@ -98,7 +98,7 @@ export async function promptAssistantSelection(config?: {
   multiple?: boolean;
 }): Promise<ParsedAssistant | ParsedAssistant[]> {
   let spinner = ora({
-    text: "Fetching all vector stores",
+    text: "Fetching all assistants",
     color: "blue",
   }).start();
   const allAssistants = await asyncToArray(getAssistants());
@@ -113,7 +113,7 @@ export async function promptAssistantSelection(config?: {
     message: config?.message ?? "Which assistant do you want to use?",
     validate: (input) => input !== null,
     options: allAssistants.map((a) => ({
-      name: `${a.name} (${a.id}) - ${a.description}}`,
+      name: `${a.name} (${a.id}) ${a.description ? `- ${a.description}` : ""}`,
       value: a,
     })),
     multiple: config?.multiple ?? false,

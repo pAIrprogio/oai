@@ -5,17 +5,18 @@ import {
   promptAssistantSelection,
   renderAssistant,
 } from "./assistant.utils.js";
+import { chalk, echo } from "zx";
 
 export const updateAssistantAction = async () => {
   const assistant = await promptAssistantSelection();
-  const config = await promptAssistantConfig();
+  const config = await promptAssistantConfig(assistant);
   const spinner = ora({
     text: "Updating assistant",
     color: "blue",
   }).start();
   const updatedAssistant = await updateAssistant(assistant.id, config);
-  spinner.stopAndPersist({
-    text: "Assistant updated",
-  });
+  spinner.stop();
+  echo("");
+  echo(chalk.bold.green("Successfully updated assistant"));
   renderAssistant(updatedAssistant);
 };
