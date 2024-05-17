@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { Tool } from "../openai/tools.utils.js";
+import { Tool } from "../openai/tool.utils.js";
 import axios from "axios";
 
 const argsSchema = z.object({

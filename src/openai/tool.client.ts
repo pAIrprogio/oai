@@ -1,7 +1,12 @@
 import { glob } from "zx";
 import { ROOTDIR } from "../utils/node.utils.js";
 import path from "path";
-import { ErrorToolOutput, Tool, ToolOutput } from "./tools.utils.js";
+import {
+  ErrorToolOutput,
+  Tool,
+  ToolOutput,
+  toOpenAiTool,
+} from "./tool.utils.js";
 import { z } from "zod";
 import { RequiredActionFunctionToolCall } from "openai/resources/beta/threads/index.mjs";
 import { PromiseReturnType, PromiseValue } from "../utils/ts.utils.js";
@@ -18,13 +23,18 @@ class ToolWithoutDefaultExportException extends Error {
   }
 }
 
+export async function getOpenAITool(toolName: string) {
+  const tool = await getTool(toolName);
+  return toOpenAiTool(tool);
+}
+
 export async function* getToolsNames() {
-  const files = await glob("src/tools/*.js", {
+  const files = await glob("src/tools/*.ts", {
     cwd: ROOTDIR,
   });
 
   for await (const file of files) {
-    yield path.basename(file);
+    yield path.basename(file, ".ts");
   }
 }
 

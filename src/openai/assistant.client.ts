@@ -2,6 +2,7 @@ import { z } from "zod";
 import { openaiClient } from "./openai.client.js";
 import { PromiseReturnType } from "../utils/ts.utils.js";
 import { Assistant, AssistantTool } from "openai/resources/beta/assistants.mjs";
+import { getOpenAITool } from "./tool.client.js";
 
 const metadataSchema = z.object({}).optional().default({});
 
@@ -63,7 +64,7 @@ export const assistantConfigSchema = z.object({
 export type AssistantConfigInput = z.input<typeof assistantConfigSchema>;
 export type AssistantConfig = z.output<typeof assistantConfigSchema>;
 
-function getToolsConfig(config: AssistantConfig) {
+async function getToolsConfig(config: AssistantConfig) {
   const codeInterpreter = config.isCodeInterpreterEnabled
     ? ([{ type: "code_interpreter" }] as const)
     : [];
@@ -72,7 +73,9 @@ function getToolsConfig(config: AssistantConfig) {
     ? ([{ type: "file_search" }] as const)
     : [];
 
-  return [...codeInterpreter, ...fileSearch];
+  const tools = await Promise.all(config.toolNames.map(getOpenAITool));
+
+  return [...codeInterpreter, ...fileSearch, ...tools];
 }
 
 export async function createAssistant(_config: AssistantConfigInput) {
@@ -85,7 +88,7 @@ export async function createAssistant(_config: AssistantConfigInput) {
     temperature: config.temperature,
     instructions: config.instructions,
     metadata: config.metadata,
-    tools: getToolsConfig(config),
+    tools: await getToolsConfig(config),
   });
 
   return parseAssistant(assistant);
@@ -107,7 +110,7 @@ export async function updateAssistant(
     response_format: config.respondWithJson
       ? { type: "json_object" }
       : { type: "text" },
-    tools: getToolsConfig(config),
+    tools: await getToolsConfig(config),
   });
 
   return parseAssistant(assistant);

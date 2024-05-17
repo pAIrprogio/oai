@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { ensureDir } from "fs-extra";
-import { Tool } from "../openai/tools.utils.js";
+import { Tool } from "../openai/tool.utils.js";
 
 const argsSchema = z.object({
   path: z.string(),

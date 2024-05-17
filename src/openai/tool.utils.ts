@@ -1,3 +1,4 @@
+import { AssistantTool } from "openai/resources/beta/assistants.mjs";
 import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
 
@@ -22,7 +23,7 @@ export interface Tool<Args = any> {
   call: (args: Args) => Promise<ToolOutput>;
 }
 
-export const toOpenAiTool = <Args = any>(tool: Tool<Args>) => {
+export const toOpenAiTool = <Args = any>(tool: Tool<Args>): AssistantTool => {
   const parameters = zodToJsonSchema(tool.argsSchema);
   delete parameters.$schema;
   return {
@@ -33,18 +34,4 @@ export const toOpenAiTool = <Args = any>(tool: Tool<Args>) => {
       parameters,
     },
   };
-};
-
-export const toOpenAiTools = (tools: Array<Tool> | undefined) => {
-  if (!tools) return [];
-  return tools.map(toOpenAiTool);
-};
-
-export const toToolsMap = (tools: Array<Tool>) => {
-  return tools.reduce((acc, tool) => {
-    return {
-      ...acc,
-      [tool.name]: tool,
-    };
-  }, {}) as { [key: string]: Tool };
 };

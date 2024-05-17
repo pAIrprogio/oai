@@ -1,7 +1,7 @@
 import { writeFile as fsWriteFile } from "fs/promises";
 import { ensureDir } from "fs-extra";
 import { dirname } from "path";
-import { Tool } from "../openai/tools.utils.js";
+import { Tool } from "../openai/tool.utils.js";
 import { z } from "zod";
 
 const argsSchema = z.object({

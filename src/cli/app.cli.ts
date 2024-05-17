@@ -2,7 +2,7 @@ import OpenAI from "openai";
 import ora, { Ora } from "ora";
 import { lastValueFrom } from "rxjs";
 import { $, chalk, echo, question } from "zx";
-import { createThread } from "../openai/assistant.v2.js";
+import { createThread } from "../openai/thread.client.js";
 import { throwOnUnhandled } from "../utils/ts.utils.js";
 import { promptAssistantSelection } from "./assistant/assistant.utils.js";
 

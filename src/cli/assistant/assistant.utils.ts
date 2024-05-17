@@ -10,6 +10,7 @@ import { MODELS } from "../../openai/openai.client.js";
 import { asyncToArray } from "iter-tools";
 import ora from "ora";
 import { chalk, echo } from "zx";
+import { getToolsNames } from "../../openai/tool.client.js";
 
 export const promptAssistantConfig = async (
   config?: ParsedAssistant,
@@ -51,6 +52,15 @@ export const promptAssistantConfig = async (
     default: config?.isFileSearchEnabled ?? false,
   });
 
+  const allTools = await asyncToArray(getToolsNames());
+
+  const toolNames = await selectPro({
+    message: "Select tools",
+    options: allTools.map((t) => ({ value: t })),
+    multiple: true,
+    defaultValue: config?.toolNames ?? [],
+  });
+
   const respondWithJson = await confirm({
     message: "Enable JSON only response?",
     default: config?.respondWithJson ?? false,
@@ -77,6 +87,7 @@ export const promptAssistantConfig = async (
     name,
     description,
     model,
+    toolNames,
     temperature: parseFloat(temperature),
     instructions,
     isCodeInterpreterEnabled,

@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { $ } from "zx";
-import { Tool } from "../openai/tools.utils.js";
+import { Tool } from "../openai/tool.utils.js";
 
 const argsSchema = z.object({
   message: z.string(),

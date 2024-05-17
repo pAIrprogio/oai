@@ -3,7 +3,7 @@ import { Subject } from "rxjs";
 import { throwOnUnhandled } from "../utils/ts.utils.js";
 import { RequiredActionFunctionToolCall } from "openai/resources/beta/threads/index.mjs";
 import { ParsedAssistant } from "./assistant.client.js";
-import { ToolRunnerOutput, executeToolCalls } from "./tools.client.js";
+import { ToolRunnerOutput, executeToolCalls } from "./tool.client.js";
 
 type PromiseValue<T> = T extends Promise<infer U> ? U : never;
 
