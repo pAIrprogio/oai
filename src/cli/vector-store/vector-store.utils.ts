@@ -47,16 +47,19 @@ export async function promptVectorStoreSelection(config?: {
   message?: string;
   multiple?: false;
   excludeUnmanaged?: boolean;
+  defaultSelected?: string[];
 }): Promise<ParsedVectorStore>;
 export async function promptVectorStoreSelection(config?: {
   message?: string;
   multiple: true;
   excludeUnmanaged?: boolean;
+  defaultSelectedIds?: string[];
 }): Promise<ParsedVectorStore[]>;
 export async function promptVectorStoreSelection(config?: {
   message?: string;
   multiple?: boolean;
   excludeUnmanaged?: boolean;
+  defaultSelectedIds?: string[];
 }) {
   let spinner = ora({
     text: "Fetching all vector stores",
@@ -68,16 +71,22 @@ export async function promptVectorStoreSelection(config?: {
   if (config?.excludeUnmanaged)
     stores = stores.filter((store) => store.syncConfig.type !== "unmanaged");
 
+  const preSelectedSet = new Set(config?.defaultSelectedIds ?? []);
+  const defaultValues = stores.filter((store) => preSelectedSet.has(store.id));
+
   const answer = await select({
     message: config?.message ?? "Which vector store do you want to use?",
     multiple: config?.multiple ?? false,
+    defaultValue: defaultValues,
+    equals: (a, b) => a.id === b.id,
     options: (input) =>
       stores
         .filter(
           (store) =>
             !input ||
-            (store.name && store.name.includes(input)) ||
-            store.id.includes(input),
+            (store.name &&
+              store.name.toLowerCase().includes(input.toLowerCase())) ||
+            store.id.toLowerCase().includes(input.toLowerCase()),
         )
         .map((s) => ({
           value: s,

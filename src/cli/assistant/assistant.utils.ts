@@ -11,45 +11,41 @@ import { asyncToArray } from "iter-tools";
 import ora from "ora";
 import { chalk, echo } from "zx";
 import { getToolsNames } from "../../openai/tool.client.js";
+import { promptVectorStoreSelection } from "../vector-store/vector-store.utils.js";
 
 export const promptAssistantConfig = async (
-  config?: ParsedAssistant,
+  assistant?: ParsedAssistant,
 ): Promise<AssistantConfigInput> => {
   const name = await input({
     message: "Name",
-    default: config?.name ?? undefined,
+    default: assistant?.name ?? undefined,
     validate: (input) =>
       assistantConfigSchema.shape.name.safeParse(input).success,
   });
 
   const description = await input({
     message: "Description",
-    default: config?.description ?? undefined,
+    default: assistant?.description ?? undefined,
     validate: (input) =>
       assistantConfigSchema.shape.description.safeParse(input).success,
   });
 
   const temperature = await input({
     message: "Temperature (0 to 1)",
-    default: config?.temperature?.toString() ?? "0.5",
+    default: assistant?.temperature?.toString() ?? "0.5",
     validate: (input) =>
       assistantConfigSchema.shape.temperature.safeParse(input).success,
   });
 
   const model = await select({
     message: "Model",
-    default: config?.model ?? MODELS[0],
+    default: assistant?.model ?? MODELS[0],
     choices: MODELS.map((m) => ({ value: m })),
   });
 
   const isCodeInterpreterEnabled = await confirm({
     message: "Enable code interpreter",
-    default: config?.isCodeInterpreterEnabled ?? false,
-  });
-
-  const isFileSearchEnabled = await confirm({
-    message: "Enable file search",
-    default: config?.isFileSearchEnabled ?? false,
+    default: assistant?.isCodeInterpreterEnabled ?? false,
   });
 
   const allTools = await asyncToArray(getToolsNames());
@@ -58,12 +54,26 @@ export const promptAssistantConfig = async (
     message: "Select tools",
     options: allTools.map((t) => ({ value: t })),
     multiple: true,
-    defaultValue: config?.toolNames ?? [],
+    defaultValue: assistant?.toolNames ?? [],
   });
+
+  const isFileSearchEnabled = await confirm({
+    message: "Enable file search",
+    default: assistant?.isFileSearchEnabled ?? false,
+  });
+
+  let vectorStoreIds: string[] | undefined;
+  if (isFileSearchEnabled)
+    vectorStoreIds = await promptVectorStoreSelection({
+      message: "Select vector stores",
+      multiple: true,
+      defaultSelectedIds:
+        assistant?.tool_resources?.file_search?.vector_store_ids ?? [],
+    }).then((store) => store.map((s) => s.id));
 
   const respondWithJson = await confirm({
     message: "Enable JSON only response?",
-    default: config?.respondWithJson ?? false,
+    default: assistant?.respondWithJson ?? false,
   });
 
   const shouldEditInstructions = await confirm({
@@ -71,7 +81,7 @@ export const promptAssistantConfig = async (
     default: false,
   });
 
-  let instructions = config?.instructions ?? "";
+  let instructions = assistant?.instructions ?? "";
   if (shouldEditInstructions) {
     instructions = await editor({
       message: "Instructions",
@@ -93,6 +103,7 @@ export const promptAssistantConfig = async (
     isCodeInterpreterEnabled,
     isFileSearchEnabled,
     respondWithJson,
+    vectorStoreIds,
   };
 };
 
@@ -123,23 +134,23 @@ export async function promptAssistantSelection(config?: {
   const answer = (await selectPro({
     message: config?.message ?? "Which assistant do you want to use?",
     validate: (input) => input !== null,
-    options: allAssistants.map((a) => ({
-      name: `${a.name ?? chalk.italic("<unnamed>")} (${a.id}) ${a.description ? `- ${a.description}` : ""}`,
-      value: a,
-    })),
+    options: (input) =>
+      allAssistants
+        .filter(
+          (a) =>
+            !input ||
+            (a.name && a.name.toLowerCase().includes(input.toLowerCase())) ||
+            a.id.toLowerCase().includes(input.toLowerCase()),
+        )
+        .map((a) => ({
+          name: `${a.name ?? chalk.italic("<unnamed>")} (${a.id}) ${a.description ? `- ${a.description}` : ""}`,
+          value: a,
+        })),
     multiple: config?.multiple ?? false,
   })) as ParsedAssistant | ParsedAssistant[];
 
   return answer;
 }
-
-const getToolsList = (assistant: ParsedAssistant) => {
-  const tools = [...assistant.toolNames];
-  if (assistant.isCodeInterpreterEnabled)
-    tools.push(chalk.underline("code_interpreter"));
-  if (assistant.isFileSearchEnabled) tools.push(chalk.underline("file_search"));
-  return tools;
-};
 
 export const renderAssistant = (assistant: ParsedAssistant) => {
   let firstLine =
@@ -151,7 +162,7 @@ export const renderAssistant = (assistant: ParsedAssistant) => {
   const vector_stores_count =
     assistant.tool_resources?.file_search?.vector_store_ids?.length;
 
-  echo(chalk.underline(`  ${assistant.playgroundUrl}`));
+  echo("  " + chalk.underline(`  ${assistant.playgroundUrl}`));
 
   let secondLine = [
     chalk.green(assistant.model),

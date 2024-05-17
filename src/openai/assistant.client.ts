@@ -63,6 +63,7 @@ export const assistantConfigSchema = z.object({
   isFileSearchEnabled: z.boolean().optional().default(false),
   respondWithJson: z.boolean().optional().default(false),
   toolNames: z.array(z.string()).optional().default([]),
+  vectorStoreIds: z.array(z.string()).optional().default([]),
 });
 
 export type AssistantConfigInput = z.input<typeof assistantConfigSchema>;
@@ -111,6 +112,11 @@ export async function updateAssistant(
     temperature: config.temperature,
     instructions: config.instructions,
     metadata: config.metadata,
+    tool_resources: {
+      file_search: {
+        vector_store_ids: config.vectorStoreIds,
+      },
+    },
     response_format: config.respondWithJson
       ? { type: "json_object" }
       : { type: "text" },
