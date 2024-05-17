@@ -4,6 +4,12 @@ import { Tool } from "../tool.utils.js";
 
 const argsSchema = z.object({
   command: z.string(),
+  cwd: z
+    .string()
+    .optional()
+    .describe(
+      "relative path to the current directory to execute the command from",
+    ),
 });
 
 type Args = z.input<typeof argsSchema>;
