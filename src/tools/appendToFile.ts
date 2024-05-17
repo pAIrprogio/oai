@@ -1,6 +1,6 @@
 import { promises as fs } from "fs";
 import { z } from "zod";
-import { Tool } from "../tool.utils.js";
+import { Tool } from "../openai/tools.utils.js";
 
 const argsSchema = z.object({
   relativeFilePath: z
@@ -11,7 +11,7 @@ const argsSchema = z.object({
 
 type Args = z.input<typeof argsSchema>;
 
-export const appendToFile = {
+export default {
   name: "appendToFile",
   description: "Appends content to the specified file",
   argsSchema,

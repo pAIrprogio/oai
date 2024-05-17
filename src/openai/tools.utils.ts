@@ -10,7 +10,7 @@ export type SuccessToolOutput = {
 export type ErrorToolOutput = {
   success: false;
   error: string;
-  output?: undefined;
+  output?: any;
 };
 
 export type ToolOutput = SuccessToolOutput | ErrorToolOutput;

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { Tool } from "../tool.utils.js";
+import { Tool } from "../openai/tools.utils.js";
 import axios from "axios";
 
 const argsSchema = z.object({
@@ -19,7 +19,7 @@ interface ToMdResponse {
   content: string;
 }
 
-export const getUrlContent = {
+export default {
   name: "getUrlContent",
   description: "Fetches the content of a URL",
   argsSchema,

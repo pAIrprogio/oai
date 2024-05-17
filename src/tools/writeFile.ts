@@ -1,7 +1,7 @@
 import { writeFile as fsWriteFile } from "fs/promises";
 import { ensureDir } from "fs-extra";
 import { dirname } from "path";
-import { Tool } from "../tool.utils.js";
+import { Tool } from "../openai/tools.utils.js";
 import { z } from "zod";
 
 const argsSchema = z.object({
@@ -13,7 +13,7 @@ const argsSchema = z.object({
 
 type Args = z.input<typeof argsSchema>;
 
-export const writeFile = {
+export default {
   name: "writeFile",
   description: "Write text to a file, replacing the current file's content",
   argsSchema,

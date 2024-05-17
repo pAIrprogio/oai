@@ -18,7 +18,7 @@ import {
 } from "../../openai/vector-store-files.client.js";
 import { getSitemapPages } from "../../sync/sync-site-map.js";
 import { promptVectorStoreSelection } from "./vector-store.utils.js";
-import { retry } from "../../node.utils.js";
+import { retry } from "../../utils/node.utils.js";
 
 export const syncVectorStoreCli = async () => {
   const store = await promptVectorStoreSelection(

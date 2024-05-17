@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { $ } from "zx";
-import { Tool } from "../tool.utils.js";
+import { Tool } from "../openai/tools.utils.js";
 
 const argsSchema = z.object({
   message: z.string(),
@@ -8,7 +8,7 @@ const argsSchema = z.object({
 
 type Args = z.input<typeof argsSchema>;
 
-export const commit = {
+export default {
   name: "commit",
   description: "Adds and commits all changes to the current git repository",
   argsSchema,

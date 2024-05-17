@@ -1,6 +1,6 @@
 import { readFile as fsReadFile } from "fs/promises";
 import { z } from "zod";
-import { Tool } from "../tool.utils.js";
+import { Tool } from "../openai/tools.utils.js";
 
 const argsSchema = z.object({
   relativeFilePath: z
@@ -14,7 +14,7 @@ const argsSchema = z.object({
 
 type Args = z.input<typeof argsSchema>;
 
-export const readFile = {
+export default {
   name: "readFile",
   description: "Reads a file",
   argsSchema,

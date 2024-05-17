@@ -1,6 +1,6 @@
 import { z, input } from "zod";
 import { $ } from "zx";
-import { Tool } from "../tool.utils.js";
+import { Tool } from "../openai/tools.utils.js";
 
 const argsSchema = z.object({
   relativePath: z
@@ -11,7 +11,7 @@ const argsSchema = z.object({
 
 type Args = z.input<typeof argsSchema>;
 
-export const ls = {
+export default {
   name: "ls",
   description: "List a directory's files",
   argsSchema,

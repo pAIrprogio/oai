@@ -5,6 +5,10 @@ import { createVectorStoreAction } from "./vector-store/create-vector-store.cli.
 import { deleteVectorStoreAction } from "./vector-store/delete-vector-store.cli.js";
 import { updateVectorStoreAction } from "./vector-store/update-vector-store.cli.js";
 import { syncVectorStoreCli } from "./vector-store/sync-vector-store.cli.js";
+import { listAssistantsAction } from "./assistant/list-assistants.cli.js";
+import { createAssistantAction } from "./assistant/create-assistant.cli.js";
+import { updateAssistantAction } from "./assistant/update-assistant.cli.js";
+import { deleteAssistantAction } from "./assistant/delete-assistant.cli.js";
 
 const program = new Command();
 program
@@ -25,6 +29,45 @@ const runCommand = program
     await appAction();
   });
 
+const assistantsCommand = program
+  .command("assistants")
+  .alias("ass")
+  .alias("a")
+  .description("Manage your assistants");
+
+assistantsCommand
+  .command("list")
+  .alias("ls")
+  .allowExcessArguments(false)
+  .description("List all assistants")
+  .action(listAssistantsAction);
+
+assistantsCommand
+  .command("create")
+  .alias("new")
+  .alias("add")
+  .allowExcessArguments(false)
+  .description("Create a new assistant")
+  .action(createAssistantAction);
+
+assistantsCommand
+  .command("delete")
+  .alias("rm")
+  .alias("remove")
+  .alias("del")
+  .argument("[id]", "The id of the assistant to delete")
+  .allowExcessArguments(false)
+  .description("Delete a assistant")
+  .action(deleteAssistantAction);
+
+assistantsCommand
+  .command("update")
+  .alias("edit")
+  .alias("e")
+  .allowExcessArguments(false)
+  .description("Update a assistant")
+  .action(updateAssistantAction);
+
 const storesCommand = program
   .command("vector-stores")
   .alias("vs")
@@ -39,6 +82,8 @@ storesCommand
 
 storesCommand
   .command("create")
+  .alias("new")
+  .alias("add")
   .allowExcessArguments(false)
   .description("Create a new vector store")
   .action(createVectorStoreAction);
@@ -56,6 +101,7 @@ storesCommand
 storesCommand
   .command("update")
   .alias("edit")
+  .alias("e")
   .allowExcessArguments(false)
   .description("Update a vector store")
   .action(updateVectorStoreAction);

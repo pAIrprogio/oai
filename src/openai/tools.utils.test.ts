@@ -1,8 +1,8 @@
 import { describe, expect, it } from "bun:test";
-import { toOpenAiTool, toOpenAiTools } from "./tool.utils.js";
-import { ls } from "./tools/ls.js";
-import { readFile } from "./tools/readFile.js";
-import { executeCommand } from "./tools/executeCommand.js";
+import { toOpenAiTool, toOpenAiTools } from "./tools.utils.js";
+import { ls } from "../tools/ls.js";
+import { readFile } from "../tools/readFile.js";
+import { executeCommand } from "../tools/executeCommand.js";
 
 describe("toOpenAiTool", () => {
   it("creates schema from a tool", () => {
