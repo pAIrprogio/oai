@@ -57,8 +57,6 @@ const storeConfigSchema = z.object({
   }),
 });
 
-type StoreSyncConfig = z.infer<typeof syncConfigSchema>;
-
 export type StoreConfigInput = z.input<typeof storeConfigSchema>;
 
 export const getVectorStorePlaygroundUrl = (storeId: string) =>

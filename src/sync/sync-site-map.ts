@@ -1,13 +1,13 @@
-import wretch from "wretch";
+import { asyncFilter, filter, map, pipe } from "iter-tools";
 import xml2js from "xml2js";
-import { pipe, asyncFilter, map, filter } from "iter-tools";
+import { getArticleFromUrl, getUrl } from "../utils/web.utils.js";
 
 function urlToFileName(url: string) {
   return url.replace(/^https?:\/\//, "").replace(/\/$/, "index") + ".html";
 }
 
 export async function* getSitemapPages(sitemapUrl: string, urlFilter?: string) {
-  const sitemapXml = await getPlainTextUrl(sitemapUrl);
+  const sitemapXml = await getUrl(sitemapUrl);
   const filterRegex = urlFilter ? new RegExp(urlFilter) : undefined;
   const sitemap =
     (await xml2js.parseStringPromise(sitemapXml)).urlset?.url ??
@@ -24,10 +24,7 @@ export async function* getSitemapPages(sitemapUrl: string, urlFilter?: string) {
   )(sitemap);
 }
 
-export function getUrlAsBlob(url: string) {
-  return wretch(url).get().blob();
-}
-
-export function getPlainTextUrl(url: string) {
-  return wretch(url).get().text();
-}
+const getUrlAsBlob = async (url: string) => {
+  const res = await getArticleFromUrl(url);
+  return new Blob([res.content], { type: "text/html" });
+};
