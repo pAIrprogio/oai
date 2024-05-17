@@ -8,7 +8,9 @@ import {
 import { chalk, echo } from "zx";
 
 export const updateAssistantAction = async () => {
-  const assistant = await promptAssistantSelection();
+  const assistant = await promptAssistantSelection({
+    message: "Which assistant do you want to update?",
+  });
   const config = await promptAssistantConfig(assistant);
   const spinner = ora({
     text: "Updating assistant",

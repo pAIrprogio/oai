@@ -1,6 +1,6 @@
 {
-  "name": "gpt-coding-assistant",
-  "version": "1.0.0",
+  "name": "@pairprog/oai",
+  "version": "3.0.0",
   "description": "",
   "main": "index.ts",
   "type": "module",
@@ -9,7 +9,7 @@
     "debug": "bun --inspect-wait src/index.ts"
   },
   "bin": {
-    "ai": "./ai.sh"
+    "oai": "./oai.sh"
   },
   "keywords": [],
   "author": "",

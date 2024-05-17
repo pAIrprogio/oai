@@ -124,7 +124,7 @@ export async function promptAssistantSelection(config?: {
     message: config?.message ?? "Which assistant do you want to use?",
     validate: (input) => input !== null,
     options: allAssistants.map((a) => ({
-      name: `${a.name} (${a.id}) ${a.description ? `- ${a.description}` : ""}`,
+      name: `${a.name ?? chalk.italic("<unnamed>")} (${a.id}) ${a.description ? `- ${a.description}` : ""}`,
       value: a,
     })),
     multiple: config?.multiple ?? false,
@@ -143,17 +143,32 @@ const getToolsList = (assistant: ParsedAssistant) => {
 
 export const renderAssistant = (assistant: ParsedAssistant) => {
   let firstLine =
-    chalk.bold(assistant.name ?? "<unnamed>") + " (" + assistant.id + ")";
-  if (assistant.description) firstLine += ` - ${assistant.description}`;
+    chalk.bold(assistant.name ?? chalk.italic("<unnamed>")) +
+    ` (${assistant.id})`;
   echo(firstLine);
 
-  const toolsList = getToolsList(assistant).join(" | ");
+  if (assistant.description) echo("  " + chalk.italic(assistant.description));
+  const vector_stores_count =
+    assistant.tool_resources?.file_search?.vector_store_ids?.length;
 
   let secondLine = [
     chalk.green(assistant.model),
     chalk.blue(`t°${assistant.temperature}`),
-    toolsList ? toolsList : chalk.italic("No tools"),
   ];
 
-  echo(secondLine.join(" - "));
+  if (assistant.tools.length > 0)
+    secondLine.push(
+      chalk.magenta(
+        `${assistant.tools.length} tool${assistant.tools.length === 1 ? "" : "s"}`,
+      ),
+    );
+
+  if (vector_stores_count)
+    secondLine.push(
+      chalk.yellow(
+        `${vector_stores_count} vector store${vector_stores_count === 1 ? "" : "s"}`,
+      ),
+    );
+
+  echo("  " + secondLine.join(" - "));
 };
