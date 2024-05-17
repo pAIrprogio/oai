@@ -29,6 +29,7 @@
     "moderndash": "^3.11.0",
     "openai": "^4.47.1",
     "ora": "^7.0.1",
+    "pretty-bytes": "^6.1.1",
     "rxjs": "^7.8.1",
     "wretch": "^2.8.1",
     "xml2js": "^0.6.2",

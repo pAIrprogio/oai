@@ -1,13 +1,4 @@
-import {
-  asyncConsume,
-  asyncFilter,
-  asyncForEach,
-  asyncMap,
-  asyncTap,
-  asyncThrottle,
-  asyncToArray,
-  pipe,
-} from "iter-tools";
+import { asyncFilter, asyncForEach, asyncTap, pipe } from "iter-tools";
 import { type VectorStoreFile } from "openai/resources/beta/vector-stores/files.mjs";
 import ora from "ora";
 import { chalk, echo } from "zx";
@@ -18,14 +9,13 @@ import {
 } from "../../openai/vector-store-files.client.js";
 import { getSitemapPages } from "../../sync/sync-site-map.js";
 import { promptVectorStoreSelection } from "./vector-store.utils.js";
-import { retry } from "../../utils/node.utils.js";
 
 export const syncVectorStoreCli = async () => {
-  const store = await promptVectorStoreSelection(
-    "Select a vector store to sync",
-    false,
-    true,
-  );
+  const store = await promptVectorStoreSelection({
+    message: "Select a vector store to sync",
+    multiple: false,
+    excludeUnmanaged: true,
+  });
 
   if (store.syncConfig.type === "unmanaged") {
     echo(chalk.yellow("Unmanaged vector store, skipping sync"));

@@ -8,9 +8,13 @@ const metadataSchema = z.object({}).optional().default({});
 
 export type AssistantMetadata = z.infer<typeof metadataSchema>;
 
+export const getAssistantPlaygroundUrl = (id: string) =>
+  `https://platform.openai.com/playground/assistants?assistant=${id}&mode=assistant`;
+
 export const parseAssistant = (assistant: Assistant) => {
   return {
     ...assistant,
+    playgroundUrl: getAssistantPlaygroundUrl(assistant.id),
     isCodeInterpreterEnabled: assistant.tools.some(
       (tool) => tool.type === "code_interpreter",
     ),

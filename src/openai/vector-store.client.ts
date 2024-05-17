@@ -1,16 +1,7 @@
 import { VectorStore as OAIVectorStore } from "openai/resources/beta/index.mjs";
 import { z } from "zod";
 import { openaiClient } from "./openai.client.js";
-
-export interface VectorStore {
-  id: string;
-  name: string;
-  status: "expired" | "in_progress" | "completed";
-  filesCount: number;
-  size: number;
-  playgroundUrl: string;
-  syncConfig: StoreSyncConfig;
-}
+import { safeParseJson } from "../utils/json.utils.js";
 
 const syncConfigUnmanagedSchema = z.object({
   type: z.literal("unmanaged").optional().default("unmanaged"),
@@ -53,68 +44,44 @@ const syncConfigSchema = z
   .default({ type: "unmanaged", version: "1" });
 
 const storeMetadataSchema = z.object({
-  syncConfig: syncConfigSchema,
+  oai: z.preprocess(
+    safeParseJson,
+    z.object({ syncConfig: syncConfigSchema }).optional().default({}),
+  ),
 });
 
 const storeConfigSchema = z.object({
   name: z.string(),
-  metadata: storeMetadataSchema,
+  metadata: z.object({
+    syncConfig: syncConfigSchema,
+  }),
 });
 
 type StoreSyncConfig = z.infer<typeof syncConfigSchema>;
 
 export type StoreConfigInput = z.input<typeof storeConfigSchema>;
 
-const getVectorStorePlaygroundUrl = (storeId: string) =>
+export const getVectorStorePlaygroundUrl = (storeId: string) =>
   `https://platform.openai.com/storage/vector_stores/${storeId}`;
 
-const jsonParseMetadataFields = (metadata: { [key: string]: string }) => {
-  return Object.fromEntries(
-    Object.entries(metadata).map(([key, value]) => {
-      try {
-        return [key, JSON.parse(value) as any];
-      } catch (e) {
-        return [key, value as string];
-      }
-    }),
-  );
-};
-
-const jsonStringifyMetadataFields = (metadata: { [key: string]: any }) => {
-  return Object.fromEntries(
-    Object.entries(metadata).map(([key, value]) => {
-      try {
-        return [key, JSON.stringify(value)];
-      } catch (e) {
-        return [key, value as string];
-      }
-    }),
-  );
-};
-
-const oaiVectorStoreToVectorStore = (store: OAIVectorStore): VectorStore => {
-  const metadata = jsonParseMetadataFields(
-    store.metadata as { [key: string]: string },
-  );
-  const syncConfig = syncConfigSchema.parse(metadata.syncConfig);
+const parseVectorStore = (store: OAIVectorStore) => {
+  const metadata = storeMetadataSchema.parse(store.metadata);
 
   return {
-    id: store.id,
-    name: store.name,
-    status: store.status,
-    filesCount: store.file_counts.total,
-    size: store.usage_bytes,
+    ...store,
+    syncConfig: metadata.oai.syncConfig,
     playgroundUrl: getVectorStorePlaygroundUrl(store.id),
-    syncConfig,
   };
 };
+
+export type ParsedVectorStore = ReturnType<typeof parseVectorStore>;
 
 export async function* getVectorStores() {
   let res = await openaiClient.beta.vectorStores.list();
 
   do {
     for (const store of res.data) {
-      yield oaiVectorStoreToVectorStore(store);
+      yield parseVectorStore(store);
     }
     if (!res.hasNextPage()) break;
     res = await res.getNextPage();
@@ -123,16 +90,18 @@ export async function* getVectorStores() {
 
 export async function getVectorStore(storeId: string) {
   const res = await openaiClient.beta.vectorStores.retrieve(storeId);
-  return oaiVectorStoreToVectorStore(res);
+  return parseVectorStore(res);
 }
 
 export async function updateVectorStore(id: string, _config: StoreConfigInput) {
   const config = storeConfigSchema.parse(_config);
   const res = await openaiClient.beta.vectorStores.update(id, {
     ...config,
-    metadata: jsonStringifyMetadataFields(config.metadata),
+    metadata: {
+      oai: JSON.stringify({ syncConfig: config.metadata.syncConfig }),
+    },
   });
-  return oaiVectorStoreToVectorStore(res);
+  return parseVectorStore(res);
 }
 
 export async function createVectorStore(_config: StoreConfigInput) {
@@ -140,12 +109,11 @@ export async function createVectorStore(_config: StoreConfigInput) {
   const res = await openaiClient.beta.vectorStores.create({
     ...config,
     metadata: {
-      ...config.metadata,
-      syncConfig: JSON.stringify(config.metadata.syncConfig),
+      oai: JSON.stringify({ syncConfig: config.metadata.syncConfig }),
     },
   });
 
-  return oaiVectorStoreToVectorStore(res);
+  return parseVectorStore(res);
 }
 
 export async function deleteVectorStore(storeId: string) {

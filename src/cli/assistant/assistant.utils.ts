@@ -151,6 +151,8 @@ export const renderAssistant = (assistant: ParsedAssistant) => {
   const vector_stores_count =
     assistant.tool_resources?.file_search?.vector_store_ids?.length;
 
+  echo(chalk.underline(`  ${assistant.playgroundUrl}`));
+
   let secondLine = [
     chalk.green(assistant.model),
     chalk.blue(`t°${assistant.temperature}`),

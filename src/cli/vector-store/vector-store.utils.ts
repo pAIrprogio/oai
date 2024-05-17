@@ -3,14 +3,13 @@ import { select } from "inquirer-select-pro";
 import { asyncToArray } from "iter-tools";
 import ora from "ora";
 import { echo } from "zx";
+import prettyBytes from "pretty-bytes";
 import {
-  VectorStore,
+  ParsedVectorStore,
   getVectorStores,
 } from "../../openai/vector-store.client.js";
 
-export const toKb = (bytes: number) => (bytes / 1024).toFixed(2);
-
-export const renderStatus = (status: VectorStore["status"]) => {
+export const renderStatus = (status: ParsedVectorStore["status"]) => {
   switch (status) {
     case "expired":
       return chalk.red("expired");
@@ -21,7 +20,9 @@ export const renderStatus = (status: VectorStore["status"]) => {
   }
 };
 
-export const renderSyncType = (syncType: VectorStore["syncConfig"]["type"]) => {
+export const renderSyncType = (
+  syncType: ParsedVectorStore["syncConfig"]["type"],
+) => {
   switch (syncType) {
     case "unmanaged":
       return chalk.yellow("unmanaged");
@@ -32,30 +33,31 @@ export const renderSyncType = (syncType: VectorStore["syncConfig"]["type"]) => {
   }
 };
 
-export const renderStore = (store: VectorStore) => {
-  echo(`${chalk.bold(store.name ?? "<unnamed>")} - ${store.playgroundUrl}`);
+export const renderStore = (store: ParsedVectorStore) => {
+  echo(`${chalk.bold(store.name ?? "<unnamed>")} (${store.id})`);
+  echo("  " + chalk.underline(store.playgroundUrl));
   echo(
     chalk.blue(
-      `  ${renderStatus(store.status)} - ${store.filesCount} files / ${toKb(store.size)}kB - ${renderSyncType(store.syncConfig.type)}`,
+      `  ${renderStatus(store.status)} - ${store.file_counts.total} files / ${prettyBytes(store.usage_bytes)} - ${renderSyncType(store.syncConfig.type)}`,
     ),
   );
 };
 
-export async function promptVectorStoreSelection(
-  message: string,
-  multi: false,
-  excludeUnmanaged?: boolean,
-): Promise<VectorStore>;
-export async function promptVectorStoreSelection(
-  message: string,
-  multi: true,
-  excludeUnmanaged?: boolean,
-): Promise<VectorStore[]>;
-export async function promptVectorStoreSelection(
-  message: string,
-  multi: boolean = false,
-  excludeUnmanaged = false,
-) {
+export async function promptVectorStoreSelection(config?: {
+  message?: string;
+  multiple?: false;
+  excludeUnmanaged?: boolean;
+}): Promise<ParsedVectorStore>;
+export async function promptVectorStoreSelection(config?: {
+  message?: string;
+  multiple: true;
+  excludeUnmanaged?: boolean;
+}): Promise<ParsedVectorStore[]>;
+export async function promptVectorStoreSelection(config?: {
+  message?: string;
+  multiple?: boolean;
+  excludeUnmanaged?: boolean;
+}) {
   let spinner = ora({
     text: "Fetching all vector stores",
     color: "blue",
@@ -63,12 +65,12 @@ export async function promptVectorStoreSelection(
   let stores = await asyncToArray(getVectorStores());
   spinner.stop();
 
-  if (excludeUnmanaged)
+  if (config?.excludeUnmanaged)
     stores = stores.filter((store) => store.syncConfig.type !== "unmanaged");
 
   const answer = await select({
-    message: message,
-    multiple: multi,
+    message: config?.message ?? "Which vector store do you want to use?",
+    multiple: config?.multiple ?? false,
     options: (input) =>
       stores
         .filter(
@@ -79,7 +81,7 @@ export async function promptVectorStoreSelection(
         )
         .map((s) => ({
           value: s,
-          name: `${s.name ?? chalk.italic("<unnamed>")} (${s.id}) | ${s.filesCount} files / ${toKb(s.size)}kB`,
+          name: `${s.name ?? chalk.italic("<unnamed>")} (${s.id}) | ${s.file_counts.total} files / ${prettyBytes(s.usage_bytes)}`,
         })),
   });
 

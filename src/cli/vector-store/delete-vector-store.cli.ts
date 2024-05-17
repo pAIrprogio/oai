@@ -16,10 +16,10 @@ export const deleteVectorStoreAction = async (args?: string) => {
     return;
   }
 
-  const answer = await promptVectorStoreSelection(
-    "Which vector stores do you want to delete?",
-    true,
-  );
+  const answer = await promptVectorStoreSelection({
+    message: "Which vector stores do you want to delete?",
+    multiple: true,
+  });
 
   const spinner = ora({
     text: `Deleting ${answer.length} vector stores`,
