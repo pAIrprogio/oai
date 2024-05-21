@@ -1,5 +1,5 @@
 import chalk from "chalk";
-import { select } from "inquirer-select-pro";
+import { select as selectPro } from "inquirer-select-pro";
 import { asyncToArray } from "iter-tools";
 import ora from "ora";
 import { echo } from "zx";
@@ -28,6 +28,8 @@ export const renderSyncType = (
       return chalk.yellow("unmanaged");
     case "sitemap":
       return chalk.magenta("sitemap sync");
+    case "url_links":
+      return chalk.magenta("links sync");
     default:
       return chalk.red("<unknown sync type>");
   }
@@ -72,11 +74,14 @@ export async function promptVectorStoreSelection(config?: {
     stores = stores.filter((store) => store.syncConfig.type !== "unmanaged");
 
   const preSelectedSet = new Set(config?.defaultSelectedIds ?? []);
-  const defaultValues = stores.filter((store) => preSelectedSet.has(store.id));
+  const defaultValues = config?.multiple
+    ? stores.filter((store) => preSelectedSet.has(store.id))
+    : undefined;
 
-  const answer = await select({
+  const answer = await selectPro({
     message: config?.message ?? "Which vector store do you want to use?",
     multiple: config?.multiple ?? false,
+    validate: (input) => input !== null,
     defaultValue: defaultValues,
     equals: (a, b) => a.id === b.id,
     options: (input) =>

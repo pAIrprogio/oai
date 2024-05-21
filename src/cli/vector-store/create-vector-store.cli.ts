@@ -24,6 +24,10 @@ export async function promptVectorStoreConfig(
         value: "sitemap",
       },
       {
+        name: "Links from URL",
+        value: "url_links",
+      },
+      {
         name: "Unmanaged",
         value: "unmanaged",
       },
@@ -43,6 +47,39 @@ export async function promptVectorStoreConfig(
     });
     const filter = await input({
       message: "Sitemap Filter",
+      // @ts-expect-error
+      default: defaultValues?.metadata?.syncConfig?.filter,
+      validate: (value) => {
+        if (!value) return true;
+        try {
+          new RegExp(value);
+          return true;
+        } catch (e) {
+          return "Invalid RegExp";
+        }
+      },
+    });
+    return {
+      name,
+      metadata: {
+        syncConfig: {
+          type,
+          version: "1",
+          url,
+          filter: filter ? filter : undefined,
+        },
+      },
+    };
+  }
+
+  if (type === "url_links") {
+    const url = await input({
+      message: "Base URL",
+      // @ts-expect-error
+      default: defaultValues?.metadata?.syncConfig?.url,
+    });
+    const filter = await input({
+      message: "Url filter",
       // @ts-expect-error
       default: defaultValues?.metadata?.syncConfig?.filter,
       validate: (value) => {

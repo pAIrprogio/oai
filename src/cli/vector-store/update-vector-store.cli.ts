@@ -8,12 +8,14 @@ export const updateVectorStoreAction = async () => {
     message: "Which vector store do you want to update?",
     multiple: false,
   });
+
   const config = await promptVectorStoreConfig({
     name: store.name,
     metadata: {
       syncConfig: store.syncConfig,
     },
   });
+
   const spinner = ora({
     text: "Updating vector store",
     color: "blue",

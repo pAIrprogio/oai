@@ -3,8 +3,10 @@ import ora, { Ora } from "ora";
 import { lastValueFrom } from "rxjs";
 import { $, chalk, echo, question } from "zx";
 import { createThread } from "../openai/thread.client.js";
+import { deleteLastTextFromTerminal } from "../utils/cli.utils.js";
 import { throwOnUnhandled } from "../utils/ts.utils.js";
 import { promptAssistantSelection } from "./assistant/assistant.utils.js";
+import { mdToTerminal } from "./md.utils.js";
 
 $.verbose = false;
 
@@ -27,13 +29,13 @@ export async function appAction() {
 
   const assistant = await promptAssistantSelection();
   const thread = await createThread(client, assistant);
+  let bufferedText = "";
   thread.assistantResponses$.subscribe((response) => {
     if (response.type === "responseStart") {
       return;
     }
 
     if (response.type === "responseEnd") {
-      newLine();
       promptUserMessage().then((userInput) => {
         echo(chalk.bold.blue("Assistant:"));
         newLine();
@@ -52,7 +54,6 @@ export async function appAction() {
     }
 
     if (response.type === "stepEnd") {
-      newLine();
       return;
     }
 
@@ -70,15 +71,21 @@ export async function appAction() {
 
     if (response.type === "textStart") {
       newLine();
+      bufferedText = "";
       return;
     }
 
     if (response.type === "textDelta") {
-      console.write(response.content);
+      process.stdout.write(response.content);
+      bufferedText += response.content;
       return;
     }
 
     if (response.type === "textEnd") {
+      // TODO: Format text to markdown
+      newLine();
+      // deleteLastTextFromTerminal(bufferedText);
+      // echo(mdToTerminal(bufferedText));
       return;
     }
 

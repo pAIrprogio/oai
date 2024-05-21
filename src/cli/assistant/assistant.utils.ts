@@ -156,13 +156,13 @@ export const renderAssistant = (assistant: ParsedAssistant) => {
   let firstLine =
     chalk.bold(assistant.name ?? chalk.italic("<unnamed>")) +
     ` (${assistant.id})`;
+  if (assistant.description) firstLine += ` - ${assistant.description}`;
   echo(firstLine);
 
-  if (assistant.description) echo("  " + chalk.italic(assistant.description));
   const vector_stores_count =
     assistant.tool_resources?.file_search?.vector_store_ids?.length;
 
-  echo("  " + chalk.underline(`  ${assistant.playgroundUrl}`));
+  echo("  " + chalk.underline(`${assistant.playgroundUrl}`));
 
   let secondLine = [
     chalk.green(assistant.model),

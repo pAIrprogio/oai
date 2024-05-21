@@ -13,10 +13,30 @@ const syncConfigSitemapSchema = z.object({
   version: z.literal("1").default("1"),
   url: z
     .string()
-    .refine(
-      (val) => val.startsWith("https://") && val.endsWith(".xml"),
-      "Invalid sitemap url",
-    ),
+    .url()
+    .refine((val) => val.endsWith(".xml"), "Invalid sitemap url"),
+  filter: z
+    .string()
+    .optional()
+    .superRefine((val, ctx) => {
+      if (!val) return;
+      try {
+        new RegExp(val);
+        return;
+      } catch (e) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Invalid RegExp",
+        });
+        return false;
+      }
+    }),
+});
+
+const syncConfigUrlLinksSchema = z.object({
+  type: z.literal("url_links"),
+  version: z.literal("1").default("1"),
+  url: z.string().url(),
   filter: z
     .string()
     .optional()
@@ -39,6 +59,7 @@ const syncConfigSchema = z
   .discriminatedUnion("type", [
     syncConfigUnmanagedSchema,
     syncConfigSitemapSchema,
+    syncConfigUrlLinksSchema,
   ])
   .optional()
   .default({ type: "unmanaged", version: "1" });
