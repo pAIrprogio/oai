@@ -1,7 +1,7 @@
 import { getArticleFromUrl } from "../utils/web.utils.js";
 
 function urlToFileName(url: string) {
-  return url.replace(/^https?:\/\//, "").replace(/\/$/, "index") + ".html";
+  return url.replace(/^https?:\/\//, "").replace(/\/$/, "/index") + ".html";
 }
 
 export async function getUrlAsPage(url: string) {

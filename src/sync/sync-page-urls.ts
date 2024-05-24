@@ -3,6 +3,7 @@ import wretch from "wretch";
 import { regexFilter } from "../utils/regex.utils.js";
 import { asyncFilter, asyncMap, pipe } from "iter-tools";
 import { getUrlAsPage } from "./sync-urls.js";
+import { uploadVectorStoreFile } from "../openai/vector-store-files.client.js";
 
 async function* getUrlLinks(url: string) {
   const res = await wretch(url).get().text();
@@ -32,4 +33,21 @@ export async function* getUrlLinksPages(
     asyncMap(getUrlAsPage),
     asyncFilter((page) => page.html !== null),
   )(sitemapUrl);
+}
+
+export async function* uploadUrlLinksPages(
+  storeId: string,
+  {
+    url,
+    filter,
+  }: {
+    url: string;
+    filter?: string;
+  },
+) {
+  const pagesIterator = getUrlLinksPages(url, filter);
+  for await (const page of pagesIterator) {
+    yield page.url;
+    await uploadVectorStoreFile(storeId, page.url, page.html);
+  }
 }
