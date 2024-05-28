@@ -84,6 +84,8 @@ Vector Stores are used by assistants with `file search` enabled to dynamically f
 - **Page urls sync**: Fetches urls from a page, and synchronizes every url to the vector store
 - _More to come_
 
+Once set up, make sure to run `oai vs sync` to synchronize your vector store.
+
 ## Tools
 
 ### Available tools
