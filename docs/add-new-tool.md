@@ -5,4 +5,5 @@
 3. Write and export an interface for your tool args
    - Create the input validation schema using `zod`
    - Create the type infering it from the schema
-   - Export the tool, complying with the `Tool` interface from `./src/tool.utils.ts`
+   - Export the tool as default export, complying with the `Tool` interface from `./src/tool.utils.ts`
+   - Make sure the tool name matches the file's name
