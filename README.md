@@ -1,6 +1,6 @@
 # OAI - OpenAI Assistant Interface
 
-✨✨ Interacting ChatGPT with your system ✨✨
+✨✨ ChatGPT on your system ✨✨
 
 ## Table of Contents
 
@@ -33,6 +33,8 @@ The current version offers a CLI interface, but more will come in the future.
 - Let your assistant manage and access your system
 - Configure and test an assistant for another integration
 - _Whatever you can think of_
+
+Just run `oai` from the command line to interact
 
 ## Installation
 
