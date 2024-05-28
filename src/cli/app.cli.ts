@@ -1,19 +1,14 @@
-import { $, chalk, echo, glob, question } from "zx";
-import { toDirname } from "../node.utils.js";
-import { AssistantConfig } from "../assistant.utils.js";
-import select from "@inquirer/select";
 import OpenAI from "openai";
-import { syncCachedAssistant } from "../storage/storage.repository.js";
-import { toRunableAssistant, createThread } from "../assistant.v2.js";
-import { throwOnUnhandled } from "../ts.utils.js";
 import ora, { Ora } from "ora";
 import { lastValueFrom } from "rxjs";
+import { $, chalk, echo, question } from "zx";
+import { createThread } from "../openai/thread.client.js";
+import { deleteLastTextFromTerminal } from "../utils/cli.utils.js";
+import { throwOnUnhandled } from "../utils/ts.utils.js";
+import { promptAssistantSelection } from "./assistant/assistant.utils.js";
+import { mdToTerminal } from "./md.utils.js";
 
 $.verbose = false;
-
-interface AssistantConfigs {
-  [key: string]: AssistantConfig;
-}
 
 async function promptUserMessage() {
   newLine();
@@ -24,72 +19,23 @@ async function promptUserMessage() {
   return userInput;
 }
 
-async function switchAssistant(
-  client: OpenAI,
-  assistantConfigs: AssistantConfigs,
-) {
-  const assistantName = await select({
-    message: "Which assistant do you want to use?",
-    choices: Array.from(Object.values(assistantConfigs)).map((a) => ({
-      name: a.name,
-      value: a.name,
-      description: a.description,
-    })),
-  });
-
-  const assistantConfig = assistantConfigs[assistantName];
-  const remoteAssistant = await syncCachedAssistant(client, assistantConfig);
-
-  echo(
-    chalk.yellow("\nUsing assistant: ") +
-      `${remoteAssistant.name} - v${remoteAssistant.version} (${remoteAssistant.state})\n` +
-      chalk.underline.yellowBright(
-        `https://platform.openai.com/playground?mode=assistant&assistant=${remoteAssistant.remoteId}`,
-      ),
-  );
-
-  return toRunableAssistant(remoteAssistant.remoteId, assistantConfig);
-}
-
-async function getAssistantConfigs() {
-  const assistantFiles = await glob.globby("../assistants/*.ts", {
-    cwd: toDirname(import.meta.url),
-  });
-
-  let assistants = await Promise.all(
-    assistantFiles.map(async (file) => {
-      const module = await import(file);
-      return module.default as AssistantConfig;
-    }),
-  );
-
-  return assistants.reduce(
-    (acc, assistant) => ({
-      ...acc,
-      [assistant.name]: assistant,
-    }),
-    {},
-  );
-}
-
 function newLine() {
   echo("");
 }
 
-async function run() {
+export async function appAction() {
   const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-  const assistants = await getAssistantConfigs();
-  const runableAssistant = await switchAssistant(client, assistants);
   let assistantSpinner: Ora | null = null;
 
-  const thread = await createThread(client, runableAssistant);
+  const assistant = await promptAssistantSelection();
+  const thread = await createThread(client, assistant);
+  let bufferedText = "";
   thread.assistantResponses$.subscribe((response) => {
     if (response.type === "responseStart") {
       return;
     }
 
     if (response.type === "responseEnd") {
-      newLine();
       promptUserMessage().then((userInput) => {
         echo(chalk.bold.blue("Assistant:"));
         newLine();
@@ -108,7 +54,6 @@ async function run() {
     }
 
     if (response.type === "stepEnd") {
-      newLine();
       return;
     }
 
@@ -126,15 +71,21 @@ async function run() {
 
     if (response.type === "textStart") {
       newLine();
+      bufferedText = "";
       return;
     }
 
     if (response.type === "textDelta") {
-      console.write(response.content);
+      process.stdout.write(response.content);
+      bufferedText += response.content;
       return;
     }
 
     if (response.type === "textEnd") {
+      // TODO: Format text to markdown
+      newLine();
+      // deleteLastTextFromTerminal(bufferedText);
+      // echo(mdToTerminal(bufferedText));
       return;
     }
 
@@ -188,5 +139,3 @@ async function run() {
   });
   return lastValueFrom(thread.assistantResponses$);
 }
-
-await run();

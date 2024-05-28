@@ -1,123 +1,17 @@
 import OpenAI from "openai";
-import { AssistantConfig } from "./assistant.utils.js";
-import {
-  ErrorToolOutput,
-  Tool,
-  toOpenAiTools,
-  toToolsMap,
-} from "./tool.utils.js";
 import { Subject } from "rxjs";
-import { throwOnUnhandled } from "./ts.utils.js";
+import { throwOnUnhandled } from "../utils/ts.utils.js";
 import { RequiredActionFunctionToolCall } from "openai/resources/beta/threads/index.mjs";
+import { ParsedAssistant } from "./assistant.client.js";
+import { ToolRunnerOutput, executeToolCalls } from "./tool.client.js";
 
 type PromiseValue<T> = T extends Promise<infer U> ? U : never;
-
-const defaultErrorFormater = (error: any): ErrorToolOutput => {
-  if (typeof error === "string") return { success: false as const, error };
-  if (error instanceof Error)
-    return { success: false as const, error: error.message };
-
-  return { success: false as const, error: JSON.stringify(error) };
-};
-
-type ErrorFormaterFn = typeof defaultErrorFormater;
-
-const toolRunnerFactory = <T extends Array<Tool>>(
-  assistantConfig: AssistantConfig<T>,
-  errorFormater: ErrorFormaterFn = defaultErrorFormater,
-) => {
-  const toolsSchema = toOpenAiTools(assistantConfig.tools);
-  const toolsMap = toToolsMap(assistantConfig.tools);
-
-  return (toolCalls: Array<RequiredActionFunctionToolCall>) => {
-    // TODO: switch to serial execution
-    return toolCalls.map((toolCall) => {
-      if (toolCall.type !== "function") {
-        return {
-          toolId: toolCall.id,
-          toolName: toolCall.function.name,
-          output: {
-            toolName: toolCall.function.name,
-            success: false,
-            error: "Unsupported tool call type",
-          },
-        };
-      }
-
-      const functionName = toolCall.function.name as keyof typeof toolsSchema;
-
-      const tool = toolsMap[functionName as string];
-
-      if (!tool)
-        return {
-          toolId: toolCall.id,
-          toolName: toolCall.function.name,
-          output: {
-            success: false,
-            error: `Unsupported tool function ${functionName as string}`,
-          },
-        };
-
-      const functionArguments = tool.argsSchema.safeParse(
-        JSON.parse(toolCall.function.arguments),
-      );
-
-      if (!functionArguments.success) {
-        return {
-          toolId: toolCall.id,
-          toolName: toolCall.function.name,
-          output: {
-            success: false,
-            error: `Invalid arguments for function ${functionName as string}`,
-            argErrors: functionArguments.error.format(),
-          },
-        };
-      }
-
-      return tool
-        .call(functionArguments.data)
-        .then((output) => ({
-          toolId: toolCall.id,
-          toolName: toolCall.function.name,
-          output: output,
-        }))
-        .catch((err) => ({
-          toolId: toolCall.id,
-          toolName: toolCall.function.name,
-          output: errorFormater(err),
-        }));
-    });
-  };
-};
-
-export type ToolRunner = ReturnType<typeof toolRunnerFactory>;
-export type ToolRunnerOutput = ReturnType<ToolRunner>;
-
-export const toRunableAssistant = (
-  assistantId: string,
-  assistantConfig: AssistantConfig,
-) => {
-  const toolRunner = toolRunnerFactory(assistantConfig);
-  return {
-    id: assistantId,
-    toolRunner,
-    config: assistantConfig,
-  };
-};
-
-export type RunableAssistant = ReturnType<typeof toRunableAssistant>;
-
-export interface ToolCall {
-  id: string;
-  name: string;
-  args: any;
-}
 
 type UserInput =
   | {
       type: "message";
       content: string;
-      assistant?: RunableAssistant;
+      assistant?: ParsedAssistant;
     }
   | { type: "abort" };
 
@@ -132,6 +26,7 @@ type AssistantResponse =
       type: "functionCallExecuted";
       toolId: string;
       toolName: string;
+      args: any;
       output: { success: boolean };
     }
   //
@@ -155,13 +50,12 @@ type AssistantResponse =
 
 export async function createThread(
   openAIClient: OpenAI,
-  threadAssistant: RunableAssistant,
+  assistant: ParsedAssistant,
 ) {
   const userInput$ = new Subject<UserInput>();
   const assistantResponses$ = new Subject<AssistantResponse>();
   const openAIThread = await openAIClient.beta.threads.create({});
-  let runableAssistant = threadAssistant;
-  let streamId: string | null = null;
+
   let stream: ReturnType<typeof openAIClient.beta.threads.runs.stream> | null =
     null;
   let toolCallsPromises: ToolRunnerOutput = [];
@@ -256,7 +150,7 @@ export async function createThread(
         return;
       }
 
-      if (data.type === "retrieval") {
+      if (data.type === "file_search") {
         // TODO
         return;
       }
@@ -277,7 +171,7 @@ export async function createThread(
         return;
       }
 
-      if (data.type === "retrieval") {
+      if (data.type === "file_search") {
         // TODO
         return;
       }
@@ -299,7 +193,7 @@ export async function createThread(
         return;
       }
 
-      if (data.type === "retrieval") {
+      if (data.type === "file_search") {
         // TODO
         return;
       }
@@ -325,7 +219,7 @@ export async function createThread(
               tool.type === "function",
           );
 
-        toolCallsPromises = runableAssistant.toolRunner(toolCalls);
+        toolCallsPromises = executeToolCalls(toolCalls);
       }
     });
   };
@@ -337,9 +231,9 @@ export async function createThread(
     }
 
     if (event.type === "message") {
-      if (event.assistant) runableAssistant = event.assistant;
+      if (event.assistant) assistant = event.assistant;
       stream = openAIClient.beta.threads.runs.stream(openAIThread.id, {
-        assistant_id: runableAssistant.id,
+        assistant_id: assistant.id,
         additional_messages: [
           {
             role: "user",

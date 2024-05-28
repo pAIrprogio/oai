@@ -1,22 +1,26 @@
-import { promises as fs } from "fs";
+import { readFile as fsReadFile } from "fs/promises";
 import { z } from "zod";
 import { Tool } from "../openai/tool.utils.js";
+import { $ } from "zx";
 
 const argsSchema = z.object({
   relativeFilePath: z
     .string()
     .describe("The path to the file relative to the project root"),
-  content: z.string().describe("The content to append to the file"),
 });
 
 type Args = z.input<typeof argsSchema>;
 
 export default {
-  name: "appendToFile",
-  description: "Appends content to the specified file",
+  name: "fileDiff",
+  description: "Reads the current diffs of a file",
   argsSchema,
   async call(args: Args) {
-    await fs.appendFile(args.relativeFilePath, args.content);
-    return { success: true, output: null };
+    let diff = await $`git --no-pager diff ${args.relativeFilePath}`;
+
+    return {
+      success: true,
+      output: diff,
+    };
   },
 } satisfies Tool<Args>;

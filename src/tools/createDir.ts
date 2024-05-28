@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { ensureDir } from "fs-extra";
-import { Tool } from "../tool.utils.js";
+import { Tool } from "../openai/tool.utils.js";
 
 const argsSchema = z.object({
   path: z.string(),
@@ -8,7 +8,7 @@ const argsSchema = z.object({
 
 type Args = z.input<typeof argsSchema>;
 
-export const createDir = {
+export default {
   name: "createDir",
   description:
     "Creates a directory and its parent directories if they don't exist",

@@ -1,14 +1,20 @@
 import { z } from "zod";
 import { $ } from "zx";
-import { Tool } from "../tool.utils.js";
+import { Tool } from "../openai/tool.utils.js";
 
 const argsSchema = z.object({
   command: z.string(),
+  cwd: z
+    .string()
+    .optional()
+    .describe(
+      "relative path to the current directory to execute the command from",
+    ),
 });
 
 type Args = z.input<typeof argsSchema>;
 
-export const executeCommand = {
+export default {
   name: "executeCommand",
   description: "Executes a command in a bash terminal",
   argsSchema,
