@@ -9,6 +9,7 @@ import { listAssistantsAction } from "./assistant/list-assistants.cli.js";
 import { createAssistantAction } from "./assistant/create-assistant.cli.js";
 import { updateAssistantAction } from "./assistant/update-assistant.cli.js";
 import { deleteAssistantAction } from "./assistant/delete-assistant.cli.js";
+import { countTokensAction } from "./helpers/count-tokens.cli.js";
 
 const program = new Command();
 program
@@ -16,7 +17,7 @@ program
   .description("Use your OpenAI assistant from the command line")
   .version("2.0.0");
 
-const runCommand = program
+program
   .command("chat", { isDefault: true, hidden: true })
   .argument("[args...]")
   .description("Start a chat with an assistant")
@@ -28,6 +29,18 @@ const runCommand = program
 
     await appAction();
   });
+
+const utilsCommand = program
+  .command("utils")
+  .alias("u")
+  .description("Useful utilities");
+
+utilsCommand
+  .command("count-tokens")
+  .alias("ct")
+  .description("Count tokens in a project")
+  .argument("[globs]", "Globs to count tokens from")
+  .action(countTokensAction);
 
 const assistantsCommand = program
   .command("assistants")

@@ -78,7 +78,7 @@ export const promptAssistantConfig = async (
 
   const shouldEditInstructions = await confirm({
     message: "Edit instructions?",
-    default: false,
+    default: true,
   });
 
   let instructions = assistant?.instructions ?? "";
